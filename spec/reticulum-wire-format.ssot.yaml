@@ -3,7 +3,7 @@
 
 spec_meta:
   spec_id: reticulum-wire-format
-  ssot_version: "0.2.1"
+  ssot_version: "0.3.0"
   source_of_truth:
     url: https://github.com/markqvist/Reticulum
     revision:
@@ -686,3 +686,804 @@ atoms:
         lines: {start: 71, end: 92}
         role: definition
         excerpt_hash: "60905531da40a8a48cd6053ea4b125efe8935069df989fa1a41a0d6f7d2808fe"
+
+  # --- Size constants (wire-format sizes) ---
+  - id: RNS.TRN.CONST.MTU_DEFAULT
+    kind: constant
+    normative: MUST
+    statement: "Default physical-layer MTU is 500 bytes; the wire packet length MUST NOT exceed the applicable MTU (interface or link)."
+    value:
+      number: 500
+      unit: "bytes"
+    references:
+      - repo_revision: "286a78ef8c58ca4503af2b0211b3a2d7e385467c"
+        file: RNS/Reticulum.py
+        symbol: MTU
+        lines: {start: 89, end: 95}
+        role: definition
+        excerpt_hash: "dae3c6edff928af9f9a40f32b8d17e5ef33b95d54b5dada81ce0c29bc661b688"
+
+  - id: RNS.TRN.CONST.DST_LEN
+    kind: constant
+    normative: MUST
+    statement: "Destination hash, transport id, and link_id are 16 bytes (TRUNCATED_HASHLENGTH//8)."
+    value:
+      number: 16
+      unit: "bytes"
+    references:
+      - repo_revision: "286a78ef8c58ca4503af2b0211b3a2d7e385467c"
+        file: RNS/Reticulum.py
+        symbol: TRUNCATED_HASHLENGTH
+        lines: {start: 147, end: 154}
+        role: definition
+        excerpt_hash: "1abba7f077d557bf0949309d54c499bf8da53696d05e4420bb9962d15b3ebd90"
+
+  - id: RNS.TRN.CONST.IFAC_MIN_SIZE
+    kind: constant
+    normative: MUST
+    statement: "Minimum IFAC payload length is 1 byte; interface.ifac_size defines actual length."
+    value:
+      number: 1
+      unit: "bytes"
+    references:
+      - repo_revision: "286a78ef8c58ca4503af2b0211b3a2d7e385467c"
+        file: RNS/Reticulum.py
+        symbol: IFAC_MIN_SIZE
+        lines: {start: 147, end: 154}
+        role: definition
+        excerpt_hash: "1abba7f077d557bf0949309d54c499bf8da53696d05e4420bb9962d15b3ebd90"
+
+  - id: RNS.TRN.CONST.MDU
+    kind: constant
+    normative: NOTE
+    statement: "MDU (maximum data unit) is MTU minus HEADER_MAXSIZE and IFAC_MIN_SIZE; maximum plaintext in a single packet before encryption overhead."
+    value:
+      number: 464
+      unit: "bytes"
+    references:
+      - repo_revision: "286a78ef8c58ca4503af2b0211b3a2d7e385467c"
+        file: RNS/Reticulum.py
+        symbol: MDU
+        lines: {start: 147, end: 154}
+        role: definition
+        excerpt_hash: "1abba7f077d557bf0949309d54c499bf8da53696d05e4420bb9962d15b3ebd90"
+
+  - id: RNS.PKT.CONST.KEYSIZE_BYTES
+    kind: constant
+    normative: MUST
+    statement: "Identity public and private key format is 64 bytes (X25519 32 + Ed25519 32)."
+    value:
+      number: 64
+      unit: "bytes"
+    references:
+      - repo_revision: "286a78ef8c58ca4503af2b0211b3a2d7e385467c"
+        file: RNS/Identity.py
+        symbol: KEYSIZE
+        lines: {start: 59, end: 89}
+        role: definition
+        excerpt_hash: "720b8058eaadb11a0d6c6d7d00b8c416bc23181502419eaf198b79e8961967b3"
+
+  - id: RNS.PKT.CONST.SIGLENGTH_BYTES
+    kind: constant
+    normative: MUST
+    statement: "Ed25519 signature length is 64 bytes."
+    value:
+      number: 64
+      unit: "bytes"
+    references:
+      - repo_revision: "286a78ef8c58ca4503af2b0211b3a2d7e385467c"
+        file: RNS/Identity.py
+        symbol: SIGLENGTH
+        lines: {start: 59, end: 89}
+        role: definition
+        excerpt_hash: "720b8058eaadb11a0d6c6d7d00b8c416bc23181502419eaf198b79e8961967b3"
+
+  - id: RNS.PKT.CONST.HASHLENGTH_BYTES
+    kind: constant
+    normative: MUST
+    statement: "Full SHA-256 hash length is 32 bytes."
+    value:
+      number: 32
+      unit: "bytes"
+    references:
+      - repo_revision: "286a78ef8c58ca4503af2b0211b3a2d7e385467c"
+        file: RNS/Identity.py
+        symbol: HASHLENGTH
+        lines: {start: 59, end: 89}
+        role: definition
+        excerpt_hash: "720b8058eaadb11a0d6c6d7d00b8c416bc23181502419eaf198b79e8961967b3"
+
+  - id: RNS.PKT.CONST.RATCHETSIZE_BYTES
+    kind: constant
+    normative: MUST
+    statement: "Ratchet public key is 32 bytes (RATCHETSIZE//8)."
+    value:
+      number: 32
+      unit: "bytes"
+    references:
+      - repo_revision: "286a78ef8c58ca4503af2b0211b3a2d7e385467c"
+        file: RNS/Identity.py
+        symbol: RATCHETSIZE
+        lines: {start: 59, end: 89}
+        role: definition
+        excerpt_hash: "720b8058eaadb11a0d6c6d7d00b8c416bc23181502419eaf198b79e8961967b3"
+
+  - id: RNS.PKT.CONST.NAME_HASH_LENGTH_BYTES
+    kind: constant
+    normative: MUST
+    statement: "Name hash and announce random hash are 10 bytes (NAME_HASH_LENGTH//8)."
+    value:
+      number: 10
+      unit: "bytes"
+    references:
+      - repo_revision: "286a78ef8c58ca4503af2b0211b3a2d7e385467c"
+        file: RNS/Identity.py
+        symbol: NAME_HASH_LENGTH
+        lines: {start: 59, end: 89}
+        role: definition
+        excerpt_hash: "720b8058eaadb11a0d6c6d7d00b8c416bc23181502419eaf198b79e8961967b3"
+
+  - id: RNS.PKT.CONST.TOKEN_OVERHEAD
+    kind: constant
+    normative: MUST
+    statement: "Token overhead is 48 bytes (IV 16 + HMAC 32)."
+    value:
+      number: 48
+      unit: "bytes"
+    references:
+      - repo_revision: "286a78ef8c58ca4503af2b0211b3a2d7e385467c"
+        file: RNS/Cryptography/Token.py
+        symbol: TOKEN_OVERHEAD
+        lines: {start: 48, end: 52}
+        role: definition
+        excerpt_hash: "4dff74c7d681be53c8d04094d9c4384f6baabbe58d35ec3355cee1c0b087d78a"
+
+  - id: RNS.PKT.CONST.AES128_BLOCKSIZE
+    kind: constant
+    normative: MUST
+    statement: "AES block size is 16 bytes (used for padding and ciphertext alignment)."
+    value:
+      number: 16
+      unit: "bytes"
+    references:
+      - repo_revision: "286a78ef8c58ca4503af2b0211b3a2d7e385467c"
+        file: RNS/Identity.py
+        symbol: AES128_BLOCKSIZE
+        lines: {start: 59, end: 89}
+        role: definition
+        excerpt_hash: "720b8058eaadb11a0d6c6d7d00b8c416bc23181502419eaf198b79e8961967b3"
+
+  - id: RNS.RES.CONST.MAPHASH_LEN
+    kind: constant
+    normative: MUST
+    statement: "Resource map hash (part hash) is 4 bytes; first 4 bytes of full_hash(part_data+random_hash)."
+    value:
+      number: 4
+      unit: "bytes"
+    references:
+      - repo_revision: "286a78ef8c58ca4503af2b0211b3a2d7e385467c"
+        file: RNS/Resource.py
+        symbol: MAPHASH_LEN
+        lines: {start: 100, end: 106}
+        role: definition
+        excerpt_hash: "49fe8fa82569d1297698e7d4605951294aef9f19e3e421d914fdf76e1c8e83f1"
+
+  - id: RNS.LNK.CONST.ECPUBSIZE
+    kind: constant
+    normative: MUST
+    statement: "Link request/response key material is 64 bytes (Initiator X25519 32 + Ed25519 32)."
+    value:
+      number: 64
+      unit: "bytes"
+    references:
+      - repo_revision: "286a78ef8c58ca4503af2b0211b3a2d7e385467c"
+        file: RNS/Link.py
+        symbol: ECPUBSIZE
+        lines: {start: 70, end: 80}
+        role: definition
+        excerpt_hash: "66b8b51a413d69134aab52ae263f3d8e05b3d9a557a111610177661fcde4cf82"
+
+  # --- Destination hash from name ---
+  - id: RNS.PKT.ALG.DESTINATION_HASH_FROM_NAME
+    kind: algorithm
+    normative: MUST
+    statement: "Destination hash (16 bytes) is derived from human-readable name and optional identity: expand_name (app_name + aspects, + identity.hexhash if present), name_hash = SHA-256(expand_name(None, app_name, *aspects).encode())[:10], addr_hash_material = name_hash [+ identity.hash if identity], destination_hash = SHA-256(addr_hash_material)[:16]."
+    algorithm:
+      steps:
+        - "Build full name string: app_name + '.' + aspect1 + '.' + ... ; if identity supplied append '.' + identity.hexhash. No dots inside app_name or aspects."
+        - "name_hash = SHA-256(expand_name(None, app_name, *aspects).encode('utf-8'))[:NAME_HASH_LENGTH//8] (10 bytes)."
+        - "addr_hash_material = name_hash; if identity is not None append identity.hash (16 bytes) or identity bytes."
+        - "Return full_hash(addr_hash_material)[:TRUNCATED_HASHLENGTH//8] (16 bytes)."
+    references:
+      - repo_revision: "286a78ef8c58ca4503af2b0211b3a2d7e385467c"
+        file: RNS/Destination.py
+        symbol: hash
+        lines: {start: 96, end: 130}
+        role: definition
+        excerpt_hash: "1536d451b7104a3c49f1f9513d8d22841d9966ce1fc7807564fe587493f2a95e"
+
+  # --- Transport type (flags bit 4) ---
+  - id: RNS.PKT.CONST.TRANSPORT_BROADCAST
+    kind: constant
+    normative: NOTE
+    statement: "Flags byte bit 4 value 0 denotes BROADCAST transport type on the wire."
+    value:
+      number: 0
+      unit: "byte"
+    references:
+      - repo_revision: "286a78ef8c58ca4503af2b0211b3a2d7e385467c"
+        file: RNS/Transport.py
+        symbol: BROADCAST
+        lines: {start: 49, end: 54}
+        role: definition
+        excerpt_hash: "12b9eef050b0c19f58e981da519253569608b7b81156a716d2ca2a8738779b3d"
+
+  - id: RNS.PKT.CONST.TRANSPORT_TRANSPORT
+    kind: constant
+    normative: NOTE
+    statement: "Flags byte bit 4 value 1 denotes TRANSPORT transport type on the wire."
+    value:
+      number: 1
+      unit: "byte"
+    references:
+      - repo_revision: "286a78ef8c58ca4503af2b0211b3a2d7e385467c"
+        file: RNS/Transport.py
+        symbol: TRANSPORT
+        lines: {start: 49, end: 54}
+        role: definition
+        excerpt_hash: "12b9eef050b0c19f58e981da519253569608b7b81156a716d2ca2a8738779b3d"
+
+  # --- Framing ---
+  - id: RNS.TRN.BEHAV.HDLC_FRAMING
+    kind: behaviour
+    normative: MUST
+    statement: "HDLC framing (TCP, Serial, Pipe, Weave): packets delimited by FLAG 0x7E. Escape 0x7E to 0x7D 0x5E, 0x7D to 0x7D 0x5D. Unescape then extract frame between FLAG bytes."
+    references:
+      - repo_revision: "286a78ef8c58ca4503af2b0211b3a2d7e385467c"
+        file: RNS/Interfaces/TCPInterface.py
+        symbol: HDLC
+        lines: {start: 44, end: 53}
+        role: definition
+        excerpt_hash: "4eb8e632c2353e598714717ae662dca9902540e6b152e61e1611eb0ba57b259c"
+
+  - id: RNS.TRN.BEHAV.KISS_FRAMING
+    kind: behaviour
+    normative: MUST
+    statement: "KISS framing (packet radio): packets delimited by FEND 0xC0; command byte 0x00 (CMD_DATA) prepended before escaping. Escape 0xC0 to 0xDB 0xDC, 0xDB to 0xDB 0xDD. Unescape then payload is data after command byte between FEND boundaries."
+    references:
+      - repo_revision: "286a78ef8c58ca4503af2b0211b3a2d7e385467c"
+        file: RNS/Interfaces/TCPInterface.py
+        symbol: KISS
+        lines: {start: 55, end: 66}
+        role: definition
+        excerpt_hash: "43e7ab531c1f7b13e2fdbb757948225baa191ce201f1e019da7dc3fa2c0effd2"
+      - repo_revision: "286a78ef8c58ca4503af2b0211b3a2d7e385467c"
+        file: RNS/Interfaces/KISSInterface.py
+        symbol: KISS
+        lines: {start: 38, end: 57}
+        role: implementation
+        excerpt_hash: "01e6d1ad32f8d726ef825b03ad740614c7869430cc57836d172dd8d1479f7e32"
+
+  - id: RNS.TRN.BEHAV.RAW_UDP
+    kind: behaviour
+    normative: NOTE
+    statement: "UDPInterface sends on-wire packet bytes raw inside UDP payload; one datagram equals one packet (no HDLC or KISS)."
+    references:
+      - repo_revision: "286a78ef8c58ca4503af2b0211b3a2d7e385467c"
+        file: RNS/Interfaces/UDPInterface.py
+        symbol: UDPInterface
+        lines: {start: 40, end: 46}
+        role: definition
+        excerpt_hash: "75c9b841b51f338bffda082cc15eaefd89cdff0acef29321ce74863f49e0e8e4"
+
+  # --- Well-formed and unknown context ---
+  - id: RNS.PKT.RULE.WELLFORMED_PACKET
+    kind: validation_rule
+    normative: MUST
+    statement: "After IFAC removal (if present), packet MUST be parseable as HEADER_1 or HEADER_2 and length MUST be at least HEADER_MINSIZE or HEADER_MAXSIZE respectively. Malformed packets MUST be discarded."
+    references:
+      - repo_revision: "286a78ef8c58ca4503af2b0211b3a2d7e385467c"
+        file: RNS/Transport.py
+        symbol: inbound
+        lines: {start: 1241, end: 1250}
+        role: implementation
+        excerpt_hash: "4bf97df3804a80457bc2778ce572718f694feaae1b080f3d0081cecae17da805"
+
+  - id: RNS.PKT.RULE.UNKNOWN_CONTEXT_OPAQUE
+    kind: validation_rule
+    normative: MUST
+    statement: "Unknown context or packet type values MAY appear on the wire; implementations MUST NOT assign semantics to unknown values and MUST treat payload as opaque (drop or forward without interpreting)."
+    references:
+      - repo_revision: "286a78ef8c58ca4503af2b0211b3a2d7e385467c"
+        file: RNS/Transport.py
+        symbol: inbound
+        lines: {start: 1241, end: 1250}
+        role: dispatch
+        excerpt_hash: "4bf97df3804a80457bc2778ce572718f694feaae1b080f3d0081cecae17da805"
+
+  # --- Proof payload formats ---
+  - id: RNS.PKT.LAYOUT.PROOF_EXPLICIT
+    kind: layout
+    normative: MUST
+    statement: "Explicit proof payload: Packet_Hash (32 bytes) + Signature (64 bytes); total 96 bytes. Receiver validates hash matches proved packet and signature over hash."
+    layout:
+      fields:
+        - name: packet_hash
+          offset: 0
+          length: 32
+        - name: signature
+          offset: 32
+          length: 64
+    references:
+      - repo_revision: "286a78ef8c58ca4503af2b0211b3a2d7e385467c"
+        file: RNS/Packet.py
+        symbol: EXPL_LENGTH
+        lines: {start: 413, end: 414}
+        role: definition
+        excerpt_hash: "626d7908448ef64764ec1e48b02ea97c5ad831c5446486ba41aefb4170ef837c"
+
+  - id: RNS.PKT.LAYOUT.PROOF_IMPLICIT
+    kind: layout
+    normative: MUST
+    statement: "Implicit proof payload: Signature (64 bytes) only. Receiver infers proved packet by validating signature against pending packets."
+    layout:
+      fields:
+        - name: signature
+          offset: 0
+          length: 64
+    references:
+      - repo_revision: "286a78ef8c58ca4503af2b0211b3a2d7e385467c"
+        file: RNS/Packet.py
+        symbol: IMPL_LENGTH
+        lines: {start: 413, end: 414}
+        role: definition
+        excerpt_hash: "626d7908448ef64764ec1e48b02ea97c5ad831c5446486ba41aefb4170ef837c"
+
+  # --- Link request and proof ---
+  - id: RNS.LNK.LAYOUT.LINKREQUEST_PAYLOAD
+    kind: layout
+    normative: MUST
+    statement: "Link request payload: Initiator X25519 public key (32 bytes) + Initiator Ed25519 public key (32 bytes) + optional Signalling bytes (3 bytes). Total 64 or 67 bytes."
+    layout:
+      fields:
+        - name: initiator_x25519
+          offset: 0
+          length: 32
+        - name: initiator_ed25519
+          offset: 32
+          length: 32
+        - name: signalling
+          offset: 64
+          length: 3
+    references:
+      - repo_revision: "286a78ef8c58ca4503af2b0211b3a2d7e385467c"
+        file: RNS/Link.py
+        symbol: ECPUBSIZE
+        lines: {start: 70, end: 80}
+        role: definition
+        excerpt_hash: "66b8b51a413d69134aab52ae263f3d8e05b3d9a557a111610177661fcde4cf82"
+
+  - id: RNS.LNK.LAYOUT.LINKPROOF_PAYLOAD
+    kind: layout
+    normative: MUST
+    statement: "Link proof (LRPROOF) payload: Ed25519 Signature (64 bytes) + Responder X25519 public key (32 bytes) + optional Signalling bytes (3 bytes). Signed data = link_id + Responder X25519 + Responder Ed25519 + Signalling."
+    layout:
+      fields:
+        - name: signature
+          offset: 0
+          length: 64
+        - name: responder_x25519
+          offset: 64
+          length: 32
+        - name: signalling
+          offset: 96
+          length: 3
+    references:
+      - repo_revision: "286a78ef8c58ca4503af2b0211b3a2d7e385467c"
+        file: RNS/Link.py
+        symbol: prove
+        lines: {start: 371, end: 377}
+        role: definition
+        excerpt_hash: "97fef4c357e401cbc0292c9f33bee8bdb79896123d03964ec8461602c62ce271"
+
+  - id: RNS.LNK.ALG.LINKPROOF_SIGNED_DATA
+    kind: algorithm
+    normative: MUST
+    statement: "Link proof signed data is link_id (16 bytes) + Responder X25519 (32) + Responder Ed25519 (32) + Signalling bytes (3). Signature is Ed25519 over that concatenation."
+    algorithm:
+      steps:
+        - "signed_data = link_id + pub_bytes + sig_pub_bytes + signalling_bytes."
+        - "signature = identity.sign(signed_data)."
+        - "proof_data = signature + pub_bytes + signalling_bytes."
+    references:
+      - repo_revision: "286a78ef8c58ca4503af2b0211b3a2d7e385467c"
+        file: RNS/Link.py
+        symbol: prove
+        lines: {start: 371, end: 377}
+        role: implementation
+        excerpt_hash: "97fef4c357e401cbc0292c9f33bee8bdb79896123d03964ec8461602c62ce271"
+
+  # --- Token and encryption ---
+  - id: RNS.PKT.LAYOUT.TOKEN
+    kind: layout
+    normative: MUST
+    statement: "Token (encryption envelope): IV (16 bytes) + AES-256-CBC ciphertext (PKCS7-padded) + HMAC-SHA256 (32 bytes, final 32 bytes of token). Total overhead 48 bytes (TOKEN_OVERHEAD)."
+    layout:
+      fields:
+        - name: iv
+          offset: 0
+          length: 16
+        - name: ciphertext
+          offset: 16
+          length: 0
+    references:
+      - repo_revision: "286a78ef8c58ca4503af2b0211b3a2d7e385467c"
+        file: RNS/Cryptography/Token.py
+        symbol: TOKEN_OVERHEAD
+        lines: {start: 48, end: 52}
+        role: definition
+        excerpt_hash: "4dff74c7d681be53c8d04094d9c4384f6baabbe58d35ec3355cee1c0b087d78a"
+
+  - id: RNS.PKT.ALG.SINGLE_ENCRYPTION
+    kind: algorithm
+    normative: MUST
+    statement: "SINGLE-destination encryption: Ephemeral X25519 public key (32 bytes) + Token (IV + ciphertext + HMAC). Key derived via HKDF from ECDH shared key, salt = identity truncated hash, length 64, split: first 32 = HMAC key, next 32 = AES key."
+    algorithm:
+      steps:
+        - "Generate ephemeral X25519 key pair; prepend ephemeral public key (32 bytes) to token."
+        - "shared_key = ECDH(ephemeral_prv, peer_identity_pub)."
+        - "derived = HKDF(length=64, derive_from=shared_key, salt=identity_hash, context=b''); first 32 = HMAC key, next 32 = AES-256 key."
+        - "Token: PKCS7 pad → AES-256-CBC encrypt → prepend IV (16) → HMAC-SHA256(IV||ciphertext) → append HMAC (32)."
+    references:
+      - repo_revision: "286a78ef8c58ca4503af2b0211b3a2d7e385467c"
+        file: RNS/Identity.py
+        symbol: encrypt
+        lines: {start: 668, end: 690}
+        role: implementation
+        excerpt_hash: "91f22fcbff56dd4fa3f3cba45ac751e94284756cd0a635c412aaab5701cefb32"
+
+  - id: RNS.LNK.ALG.LINK_ENCRYPTION
+    kind: algorithm
+    normative: MUST
+    statement: "LINK-destination DATA encryption: Token only (no ephemeral key prefix). Key derived once per link via ECDH and HKDF(salt=link_id, length=32 or 64). Ciphertext on wire is Token.encrypt(plaintext)."
+    algorithm:
+      steps:
+        - "shared_key = X25519(link_prv, peer_pub) or inverse for other side."
+        - "derived = HKDF(derive_from=shared_key, salt=link_id, context=b'', length=32 or 64)."
+        - "ciphertext = Token(derived).encrypt(plaintext); no ephemeral prefix."
+    references:
+      - repo_revision: "286a78ef8c58ca4503af2b0211b3a2d7e385467c"
+        file: RNS/Link.py
+        symbol: encrypt
+        lines: {start: 1191, end: 1210}
+        role: implementation
+        excerpt_hash: "7d6084d8c015671a68142d8269c2db10a0d6b5cefa3ab384817b67faf62e1f75"
+
+  # --- Announce layout ---
+  - id: RNS.PKT.LAYOUT.ANNOUNCE_WITH_RATCHET
+    kind: layout
+    normative: MUST
+    statement: "Announce payload with ratchet (context flag 1): PublicKey (64) + NameHash (10) + RandomHash (10) + RatchetKey (32) + Signature (64) + optional App Data. Fixed header 176 bytes."
+    layout:
+      fields:
+        - name: public_key
+          offset: 0
+          length: 64
+        - name: name_hash
+          offset: 64
+          length: 10
+        - name: random_hash
+          offset: 74
+          length: 10
+        - name: ratchet_key
+          offset: 84
+          length: 32
+        - name: signature
+          offset: 116
+          length: 64
+        - name: app_data
+          offset: 180
+          length: 0
+    references:
+      - repo_revision: "286a78ef8c58ca4503af2b0211b3a2d7e385467c"
+        file: RNS/Identity.py
+        symbol: validate_announce
+        lines: {start: 391, end: 424}
+        role: definition
+        excerpt_hash: "6922102a8a498e82a4113713e7dac5739481cbacbd8a3e50754f5a9952f34cb7"
+
+  - id: RNS.PKT.LAYOUT.ANNOUNCE_WITHOUT_RATCHET
+    kind: layout
+    normative: MUST
+    statement: "Announce payload without ratchet (context flag 0): PublicKey (64) + NameHash (10) + RandomHash (10) + Signature (64) + optional App Data. Fixed header 148 bytes."
+    layout:
+      fields:
+        - name: public_key
+          offset: 0
+          length: 64
+        - name: name_hash
+          offset: 64
+          length: 10
+        - name: random_hash
+          offset: 74
+          length: 10
+        - name: signature
+          offset: 84
+          length: 64
+        - name: app_data
+          offset: 148
+          length: 0
+    references:
+      - repo_revision: "286a78ef8c58ca4503af2b0211b3a2d7e385467c"
+        file: RNS/Identity.py
+        symbol: validate_announce
+        lines: {start: 391, end: 424}
+        role: definition
+        excerpt_hash: "6922102a8a498e82a4113713e7dac5739481cbacbd8a3e50754f5a9952f34cb7"
+
+  # --- Link context payloads ---
+  - id: RNS.LNK.CONST.KEEPALIVE_INITIATOR
+    kind: constant
+    normative: MUST
+    statement: "KEEPALIVE payload initiator to responder: single byte 0xFF."
+    value:
+      number: 255
+      unit: "byte"
+    references:
+      - repo_revision: "286a78ef8c58ca4503af2b0211b3a2d7e385467c"
+        file: RNS/Link.py
+        symbol: KEEPALIVE
+        lines: {start: 850, end: 856}
+        role: implementation
+        excerpt_hash: "ba9ac1081ebfc4ed5e1ffca9f4f882f2a8c4ad0b6f0982215b233244aced41d4"
+
+  - id: RNS.LNK.CONST.KEEPALIVE_RESPONDER
+    kind: constant
+    normative: MUST
+    statement: "KEEPALIVE payload responder to initiator: single byte 0xFE."
+    value:
+      number: 254
+      unit: "byte"
+    references:
+      - repo_revision: "286a78ef8c58ca4503af2b0211b3a2d7e385467c"
+        file: RNS/Link.py
+        symbol: KEEPALIVE
+        lines: {start: 1151, end: 1158}
+        role: implementation
+        excerpt_hash: "ec4e875a4b36e8b529f1566fd262751ee598139d0f9eb73c53e7f503a80e899b"
+
+  - id: RNS.LNK.LAYOUT.LINKCLOSE_PAYLOAD
+    kind: layout
+    normative: MUST
+    statement: "LINKCLOSE payload: link_id (16 bytes), plaintext (no link encryption)."
+    layout:
+      fields:
+        - name: link_id
+          offset: 0
+          length: 16
+    references:
+      - repo_revision: "286a78ef8c58ca4503af2b0211b3a2d7e385467c"
+        file: RNS/Link.py
+        symbol: LINKCLOSE
+        lines: {start: 693, end: 698}
+        role: implementation
+        excerpt_hash: "938bc4cbf5699d3efbbce70ec7b92883dd29de5814b48323bea39e399d1e10c7"
+
+  - id: RNS.LNK.LAYOUT.LINKIDENTIFY_PAYLOAD
+    kind: layout
+    normative: MUST
+    statement: "LINKIDENTIFY payload (plaintext before link encrypt): PublicKey (64 bytes) + Signature (64 bytes). Signed data = link_id + identity.get_public_key()."
+    layout:
+      fields:
+        - name: public_key
+          offset: 0
+          length: 64
+        - name: signature
+          offset: 64
+          length: 64
+    references:
+      - repo_revision: "286a78ef8c58ca4503af2b0211b3a2d7e385467c"
+        file: RNS/Link.py
+        symbol: LINKIDENTIFY
+        lines: {start: 469, end: 476}
+        role: implementation
+        excerpt_hash: "a63a082643f05f596b3554d42bb5090429152a26de675c7813ccac11707c848c"
+
+  # --- Channel ---
+  - id: RNS.CHN.LAYOUT.CHANNEL_ENVELOPE
+    kind: layout
+    normative: MUST
+    statement: "Channel data (context CHANNEL): envelope is MSGTYPE (2 bytes, >H) + Sequence (2 bytes) + Length (2 bytes) + Message Data (variable). Total 6 bytes overhead. MSGTYPE >= 0xf000 reserved for system."
+    layout:
+      fields:
+        - name: msgtype
+          offset: 0
+          length: 2
+        - name: sequence
+          offset: 2
+          length: 2
+        - name: length
+          offset: 4
+          length: 2
+        - name: data
+          offset: 6
+          length: 0
+    references:
+      - repo_revision: "286a78ef8c58ca4503af2b0211b3a2d7e385467c"
+        file: RNS/Channel.py
+        symbol: pack
+        lines: {start: 179, end: 197}
+        role: definition
+        excerpt_hash: "5ca31c5fa82817a6b5a2da397a751d67b317cb8c4ae2097c8fa0d53944e27120"
+
+  # --- Path request and tunnel ---
+  - id: RNS.TRN.LAYOUT.PATH_REQUEST_CLIENT
+    kind: layout
+    normative: MUST
+    statement: "Path request (client to transport): Destination Hash (16 bytes) + Request Tag (16 bytes)."
+    layout:
+      fields:
+        - name: destination_hash
+          offset: 0
+          length: 16
+        - name: request_tag
+          offset: 16
+          length: 16
+    references:
+      - repo_revision: "286a78ef8c58ca4503af2b0211b3a2d7e385467c"
+        file: RNS/Transport.py
+        symbol: path_request_handler
+        lines: {start: 2646, end: 2672}
+        role: implementation
+        excerpt_hash: "2bacbba4a3c2b79c38012ee3bc0409c3383c7f55c1a4e133f50ac10f51c4dbf6"
+
+  - id: RNS.TRN.LAYOUT.PATH_REQUEST_TRANSPORT
+    kind: layout
+    normative: MUST
+    statement: "Path request (transport to transport): Destination Hash (16) + Requesting Transport Instance ID (16) + Request Tag (16)."
+    layout:
+      fields:
+        - name: destination_hash
+          offset: 0
+          length: 16
+        - name: requesting_transport_id
+          offset: 16
+          length: 16
+        - name: request_tag
+          offset: 32
+          length: 16
+    references:
+      - repo_revision: "286a78ef8c58ca4503af2b0211b3a2d7e385467c"
+        file: RNS/Transport.py
+        symbol: path_request_handler
+        lines: {start: 2646, end: 2672}
+        role: implementation
+        excerpt_hash: "2bacbba4a3c2b79c38012ee3bc0409c3383c7f55c1a4e133f50ac10f51c4dbf6"
+
+  - id: RNS.TRN.LAYOUT.TUNNEL_SYNTHESIS
+    kind: layout
+    normative: MUST
+    statement: "Tunnel synthesis payload: Public Key (64) + Interface Hash (32) + Random Hash (16) + Signature (64). Signed data = public_key + interface_hash + random_hash."
+    layout:
+      fields:
+        - name: public_key
+          offset: 0
+          length: 64
+        - name: interface_hash
+          offset: 64
+          length: 32
+        - name: random_hash
+          offset: 96
+          length: 16
+        - name: signature
+          offset: 112
+          length: 64
+    references:
+      - repo_revision: "286a78ef8c58ca4503af2b0211b3a2d7e385467c"
+        file: RNS/Transport.py
+        symbol: synthesize_tunnel
+        lines: {start: 2120, end: 2132}
+        role: implementation
+        excerpt_hash: "a04d758431f694a7a404f0888e2c8b77535d70665368b64a979887e0a2985b27"
+
+  # --- Resource ---
+  - id: RNS.RES.LAYOUT.RESOURCE_ADV
+    kind: layout
+    normative: MUST
+    statement: "Resource advertisement (RESOURCE_ADV): umsgpack-packed dictionary with keys t (transfer size), d (uncompressed size), n (parts), h (resource hash), r (random hash), o (original hash), m (hashmap), f (flags), i (segment index), l (segments), q (request id), and flag keys u/p/x/c/e/s. Implementations MUST use same encoding for compatibility."
+    layout:
+      fields:
+        - name: payload
+          offset: 0
+          length: 0
+    references:
+      - repo_revision: "286a78ef8c58ca4503af2b0211b3a2d7e385467c"
+        file: RNS/Resource.py
+        symbol: ResourceAdvertisement
+        lines: {start: 1312, end: 1338}
+        role: definition
+        excerpt_hash: "88a4a30ce16d05d26a75dcd3a8431e6f4093d1fbd668d6070533dbfad8690e3c"
+
+  - id: RNS.RES.LAYOUT.RESOURCE_REQ
+    kind: layout
+    normative: MUST
+    statement: "Resource part request (RESOURCE_REQ): Hashmap Exhausted (1 byte) + optional Last Map Hash (4 bytes) + Resource Hash (32 bytes) + Requested Part Hashes (4 bytes each)."
+    layout:
+      fields:
+        - name: hashmap_exhausted
+          offset: 0
+          length: 1
+        - name: last_map_hash
+          offset: 1
+          length: 4
+        - name: resource_hash
+          offset: 5
+          length: 32
+        - name: requested_hashes
+          offset: 37
+          length: 0
+    references:
+      - repo_revision: "286a78ef8c58ca4503af2b0211b3a2d7e385467c"
+        file: RNS/Resource.py
+        symbol: request_next
+        lines: {start: 918, end: 952}
+        role: implementation
+        excerpt_hash: "8b6e4fcbfba82c88b1be177de4ea8b993f6cfe950c4862a8e0eacc5109297bbe"
+
+  - id: RNS.RES.LAYOUT.RESOURCE_HMU
+    kind: layout
+    normative: MUST
+    statement: "Resource hashmap update (RESOURCE_HMU): Resource Hash (32 bytes) + umsgpack.packb([segment_index, hashmap_bytes])."
+    layout:
+      fields:
+        - name: resource_hash
+          offset: 0
+          length: 32
+        - name: packed_hashmap
+          offset: 32
+          length: 0
+    references:
+      - repo_revision: "286a78ef8c58ca4503af2b0211b3a2d7e385467c"
+        file: RNS/Resource.py
+        symbol: request
+        lines: {start: 970, end: 1047}
+        role: implementation
+        excerpt_hash: "d07c68b591b70b7ebd56c6729b60031c897142f2aa52c978dfcbcad82fc6e352"
+
+  - id: RNS.RES.LAYOUT.RESOURCE_PRF
+    kind: layout
+    normative: MUST
+    statement: "Resource proof (RESOURCE_PRF): Resource Hash (32 bytes, full SHA-256) + Proof (32 bytes, full_hash(resource_data+resource_hash))."
+    layout:
+      fields:
+        - name: resource_hash
+          offset: 0
+          length: 32
+        - name: proof
+          offset: 32
+          length: 32
+    references:
+      - repo_revision: "286a78ef8c58ca4503af2b0211b3a2d7e385467c"
+        file: RNS/Resource.py
+        symbol: prove
+        lines: {start: 739, end: 748}
+        role: implementation
+        excerpt_hash: "30086dc7d1ddfd284f4d007cf2f192f5b2da4e2ad9a3152929bde91cba255e3c"
+
+  # --- IFAC key derivation ---
+  - id: RNS.IFAC.ALG.IFAC_KEY_DERIVATION
+    kind: algorithm
+    normative: MUST
+    statement: "IFAC key (interface.ifac_key) is derived with HKDF: length=64, derive_from=ifac_origin_hash (full_hash of ifac origin material), salt=IFAC_SALT (32-byte constant), context=None. ifac_identity = Identity.from_bytes(ifac_key)."
+    algorithm:
+      steps:
+        - "Build ifac_origin from interface config (ifac_netname, ifac_netkey, etc.); ifac_origin_hash = full_hash(ifac_origin)."
+        - "ifac_key = HKDF(length=64, derive_from=ifac_origin_hash, salt=IFAC_SALT, context=None)."
+        - "ifac_identity = Identity.from_bytes(ifac_key)."
+    references:
+      - repo_revision: "286a78ef8c58ca4503af2b0211b3a2d7e385467c"
+        file: RNS/Reticulum.py
+        symbol: ifac_key
+        lines: {start: 819, end: 826}
+        role: implementation
+        excerpt_hash: "0add4c406bb05c1d78f47413ab9c70c4b3aecaca904cb7178349d2839dce8d13"

@@ -117,3 +117,136 @@
 
 ## RNS.PKT.CONST.CTX_LRPROOF
 - RNS/Packet.py `LRPROOF` lines 71-92 (definition) @ 286a78e
+
+## RNS.TRN.CONST.MTU_DEFAULT
+- RNS/Reticulum.py `MTU` lines 89-95 (definition) @ 286a78e
+
+## RNS.TRN.CONST.DST_LEN
+- RNS/Reticulum.py `TRUNCATED_HASHLENGTH` lines 147-154 (definition) @ 286a78e
+
+## RNS.TRN.CONST.IFAC_MIN_SIZE
+- RNS/Reticulum.py `IFAC_MIN_SIZE` lines 147-154 (definition) @ 286a78e
+
+## RNS.TRN.CONST.MDU
+- RNS/Reticulum.py `MDU` lines 147-154 (definition) @ 286a78e
+
+## RNS.PKT.CONST.KEYSIZE_BYTES
+- RNS/Identity.py `KEYSIZE` lines 59-89 (definition) @ 286a78e
+
+## RNS.PKT.CONST.SIGLENGTH_BYTES
+- RNS/Identity.py `SIGLENGTH` lines 59-89 (definition) @ 286a78e
+
+## RNS.PKT.CONST.HASHLENGTH_BYTES
+- RNS/Identity.py `HASHLENGTH` lines 59-89 (definition) @ 286a78e
+
+## RNS.PKT.CONST.RATCHETSIZE_BYTES
+- RNS/Identity.py `RATCHETSIZE` lines 59-89 (definition) @ 286a78e
+
+## RNS.PKT.CONST.NAME_HASH_LENGTH_BYTES
+- RNS/Identity.py `NAME_HASH_LENGTH` lines 59-89 (definition) @ 286a78e
+
+## RNS.PKT.CONST.TOKEN_OVERHEAD
+- RNS/Cryptography/Token.py `TOKEN_OVERHEAD` lines 48-52 (definition) @ 286a78e
+
+## RNS.PKT.CONST.AES128_BLOCKSIZE
+- RNS/Identity.py `AES128_BLOCKSIZE` lines 59-89 (definition) @ 286a78e
+
+## RNS.RES.CONST.MAPHASH_LEN
+- RNS/Resource.py `MAPHASH_LEN` lines 100-106 (definition) @ 286a78e
+
+## RNS.LNK.CONST.ECPUBSIZE
+- RNS/Link.py `ECPUBSIZE` lines 70-80 (definition) @ 286a78e
+
+## RNS.PKT.ALG.DESTINATION_HASH_FROM_NAME
+- RNS/Destination.py `hash` lines 96-130 (definition) @ 286a78e
+
+## RNS.PKT.CONST.TRANSPORT_BROADCAST
+- RNS/Transport.py `BROADCAST` lines 49-54 (definition) @ 286a78e
+
+## RNS.PKT.CONST.TRANSPORT_TRANSPORT
+- RNS/Transport.py `TRANSPORT` lines 49-54 (definition) @ 286a78e
+
+## RNS.TRN.BEHAV.HDLC_FRAMING
+- RNS/Interfaces/TCPInterface.py `HDLC` lines 44-53 (definition) @ 286a78e
+
+## RNS.TRN.BEHAV.KISS_FRAMING
+- RNS/Interfaces/TCPInterface.py `KISS` lines 55-66 (definition) @ 286a78e
+- RNS/Interfaces/KISSInterface.py `KISS` lines 38-57 (implementation) @ 286a78e
+
+## RNS.TRN.BEHAV.RAW_UDP
+- RNS/Interfaces/UDPInterface.py `UDPInterface` lines 40-46 (definition) @ 286a78e
+
+## RNS.PKT.RULE.WELLFORMED_PACKET
+- RNS/Transport.py `inbound` lines 1241-1250 (implementation) @ 286a78e
+
+## RNS.PKT.RULE.UNKNOWN_CONTEXT_OPAQUE
+- RNS/Transport.py `inbound` lines 1241-1250 (dispatch) @ 286a78e
+
+## RNS.PKT.LAYOUT.PROOF_EXPLICIT
+- RNS/Packet.py `EXPL_LENGTH` lines 413-414 (definition) @ 286a78e
+
+## RNS.PKT.LAYOUT.PROOF_IMPLICIT
+- RNS/Packet.py `IMPL_LENGTH` lines 413-414 (definition) @ 286a78e
+
+## RNS.LNK.LAYOUT.LINKREQUEST_PAYLOAD
+- RNS/Link.py `ECPUBSIZE` lines 70-80 (definition) @ 286a78e
+
+## RNS.LNK.LAYOUT.LINKPROOF_PAYLOAD
+- RNS/Link.py `prove` lines 371-377 (definition) @ 286a78e
+
+## RNS.LNK.ALG.LINKPROOF_SIGNED_DATA
+- RNS/Link.py `prove` lines 371-377 (implementation) @ 286a78e
+
+## RNS.PKT.LAYOUT.TOKEN
+- RNS/Cryptography/Token.py `TOKEN_OVERHEAD` lines 48-52 (definition) @ 286a78e
+
+## RNS.PKT.ALG.SINGLE_ENCRYPTION
+- RNS/Identity.py `encrypt` lines 668-690 (implementation) @ 286a78e
+
+## RNS.LNK.ALG.LINK_ENCRYPTION
+- RNS/Link.py `encrypt` lines 1191-1210 (implementation) @ 286a78e
+
+## RNS.PKT.LAYOUT.ANNOUNCE_WITH_RATCHET
+- RNS/Identity.py `validate_announce` lines 391-424 (definition) @ 286a78e
+
+## RNS.PKT.LAYOUT.ANNOUNCE_WITHOUT_RATCHET
+- RNS/Identity.py `validate_announce` lines 391-424 (definition) @ 286a78e
+
+## RNS.LNK.CONST.KEEPALIVE_INITIATOR
+- RNS/Link.py `KEEPALIVE` lines 850-856 (implementation) @ 286a78e
+
+## RNS.LNK.CONST.KEEPALIVE_RESPONDER
+- RNS/Link.py `KEEPALIVE` lines 1151-1158 (implementation) @ 286a78e
+
+## RNS.LNK.LAYOUT.LINKCLOSE_PAYLOAD
+- RNS/Link.py `LINKCLOSE` lines 693-698 (implementation) @ 286a78e
+
+## RNS.LNK.LAYOUT.LINKIDENTIFY_PAYLOAD
+- RNS/Link.py `LINKIDENTIFY` lines 469-476 (implementation) @ 286a78e
+
+## RNS.CHN.LAYOUT.CHANNEL_ENVELOPE
+- RNS/Channel.py `pack` lines 179-197 (definition) @ 286a78e
+
+## RNS.TRN.LAYOUT.PATH_REQUEST_CLIENT
+- RNS/Transport.py `path_request_handler` lines 2646-2672 (implementation) @ 286a78e
+
+## RNS.TRN.LAYOUT.PATH_REQUEST_TRANSPORT
+- RNS/Transport.py `path_request_handler` lines 2646-2672 (implementation) @ 286a78e
+
+## RNS.TRN.LAYOUT.TUNNEL_SYNTHESIS
+- RNS/Transport.py `synthesize_tunnel` lines 2120-2132 (implementation) @ 286a78e
+
+## RNS.RES.LAYOUT.RESOURCE_ADV
+- RNS/Resource.py `ResourceAdvertisement` lines 1312-1338 (definition) @ 286a78e
+
+## RNS.RES.LAYOUT.RESOURCE_REQ
+- RNS/Resource.py `request_next` lines 918-952 (implementation) @ 286a78e
+
+## RNS.RES.LAYOUT.RESOURCE_HMU
+- RNS/Resource.py `request` lines 970-1047 (implementation) @ 286a78e
+
+## RNS.RES.LAYOUT.RESOURCE_PRF
+- RNS/Resource.py `prove` lines 739-748 (implementation) @ 286a78e
+
+## RNS.IFAC.ALG.IFAC_KEY_DERIVATION
+- RNS/Reticulum.py `ifac_key` lines 819-826 (implementation) @ 286a78e
