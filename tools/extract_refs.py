@@ -19,7 +19,7 @@ Schema vNext: repo_revision lives on manifest only; refs must not have repo_revi
 import argparse
 import ast
 import hashlib
-import os
+import re
 import sys
 from pathlib import Path
 
@@ -43,10 +43,42 @@ def excerpt_hash(content: str, start: int, end: int) -> str:
     return hashlib.sha256(raw).hexdigest()
 
 
+def find_ast_def_ranges(content: str, symbol: str) -> list[tuple[int, int]]:
+    """
+    For .py content: find all FunctionDef/ClassDef/AsyncFunctionDef with node.name == symbol.
+    Returns list of (start, end) 1-indexed inclusive. Empty if not .py or parse error.
+    """
+    try:
+        tree = ast.parse(content)
+    except SyntaxError:
+        return []
+    matches = []
+    for node in ast.walk(tree):
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            if node.name == symbol:
+                end = node.end_lineno if hasattr(node, "end_lineno") and node.end_lineno else node.lineno
+                matches.append((node.lineno, end))
+    return matches
+
+
+def find_assignment_lines(content: str, symbol: str) -> list[int]:
+    """
+    Find line numbers (1-indexed) where symbol appears in assignment-ish form: ^SYMBOL\\s*=
+    (or with leading whitespace). Used for constants when AST has no def match.
+    """
+    pattern = re.compile(r"^\s*" + re.escape(symbol) + r"\s*=", re.MULTILINE)
+    lines = content.splitlines()
+    result = []
+    for i, line in enumerate(lines):
+        if pattern.match(line):
+            result.append(i + 1)
+    return result
+
+
 def find_symbol_line_ranges(content: str, symbol: str, filepath: str, kind_hint: str) -> list[tuple[int, int]]:
     """
-    Find all (start, end) 1-indexed inclusive ranges where symbol appears.
-    Returns list of (start_line, end_line) for each occurrence.
+    Find all (start, end) 1-indexed inclusive ranges where symbol appears (substring in line).
+    Returns list of (start_line, end_line) for each occurrence. Used as last resort.
     """
     lines = content.splitlines()
     occurrences = []
@@ -88,21 +120,32 @@ def fill_line_range(
 ) -> tuple[int, int] | None:
     """
     Deterministic windowing. Returns (start, end) 1-indexed inclusive or None.
-    Fails (returns None) if symbol occurs more than once; caller must exit non-zero.
+    For .py: AST-first (FunctionDef/ClassDef by name), then assignment regex (^SYMBOL\\s*=),
+    then substring with uniqueness. Fails (returns None) if ambiguous; caller must exit non-zero.
     """
-    occurrences = find_symbol_line_ranges(content, symbol, filepath, kind_hint)
-    if len(occurrences) == 0:
-        return None
-    if len(occurrences) > 1:
-        return None  # caller must fail
-    line_no = occurrences[0][0]
-    # Prefer def/class block for .py
     if filepath.endswith(".py"):
-        block = fill_range_def_or_class(content, filepath, symbol)
-        if block is not None:
-            return block
-    # Constants or single line: ± 2 lines
-    return fill_range_constant(content, line_no, 2)
+        # 1. AST-first: locate FunctionDef/ClassDef by exact node.name == symbol
+        ast_matches = find_ast_def_ranges(content, symbol)
+        if len(ast_matches) == 1:
+            return ast_matches[0]
+        if len(ast_matches) > 1:
+            return None  # ambiguous
+        # 2. No AST match: treat as constant, assignment-ish form
+        assign_lines = find_assignment_lines(content, symbol)
+        if len(assign_lines) == 1:
+            return fill_range_constant(content, assign_lines[0], 2)
+        if len(assign_lines) > 1:
+            return None
+        # 3. Fall back to substring; require uniqueness
+        occurrences = find_symbol_line_ranges(content, symbol, filepath, kind_hint)
+        if len(occurrences) != 1:
+            return None
+        return fill_range_constant(content, occurrences[0][0], 2)
+    # Non-.py: substring with uniqueness
+    occurrences = find_symbol_line_ranges(content, symbol, filepath, kind_hint)
+    if len(occurrences) == 0 or len(occurrences) > 1:
+        return None
+    return fill_range_constant(content, occurrences[0][0], 2)
 
 
 def verify_ref(
@@ -120,7 +163,7 @@ def verify_ref(
         return (False, f"file not found under vendor: {filepath}")
     # repo_revision is on manifest only; ref must not override it
     if ref.get("repo_revision") is not None and ref.get("repo_revision") != expected_commit:
-        return (False, f"repo_revision on ref does not match manifest.repo_revision")
+        return (False, "repo_revision on ref does not match manifest.repo_revision")
     lines_obj = ref.get("lines")
     if not lines_obj or "start" not in lines_obj or "end" not in lines_obj:
         return (False, "reference missing lines.start/end")
