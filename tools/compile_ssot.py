@@ -94,7 +94,12 @@ def main() -> int:
                 fpath = ref.get("file", "")
                 sym = ref.get("symbol", "")
                 ln = ref.get("lines") or {}
-                lines.append(f"  - {fpath} ({sym}) lines {ln.get('start', '?')}-{ln.get('end', '?')}")
+                rev = ref.get("repo_revision", "")
+                short_rev = rev[:7] if rev else ""
+                ref_line = f"  - {fpath} ({sym}) lines {ln.get('start', '?')}-{ln.get('end', '?')}"
+                if short_rev:
+                    ref_line += f" @ {short_rev}"
+                lines.append(ref_line)
         if atom.get("value"):
             lines.append(f"- **Value:** {atom['value']}")
         if atom.get("layout", {}).get("fields"):
@@ -116,7 +121,7 @@ def main() -> int:
         val = a.get("value") or {}
         num = val.get("number", "")
         unit = val.get("unit", "")
-        stmt = (a.get("statement") or "")[:80]
+        stmt = (a.get("statement") or "")
         const_lines.append(f"| {a.get('id', '')} | {num} | {unit} | {stmt} |")
     const_lines.append("")
     (out_dir / "constants.md").write_text("\n".join(const_lines), encoding="utf-8")
@@ -154,7 +159,10 @@ def main() -> int:
         aid = atom.get("id", "")
         trace_lines.append(f"## {aid}")
         for ref in (atom.get("references") or []):
-            trace_lines.append(f"- {ref.get('file')} `{ref.get('symbol')}` lines {ref.get('lines', {}).get('start')}-{ref.get('lines', {}).get('end')} ({ref.get('role')})")
+            ln = ref.get("lines") or {}
+            rev = ref.get("repo_revision", "")
+            short_rev = f" @ {rev[:7]}" if rev else ""
+            trace_lines.append(f"- {ref.get('file')} `{ref.get('symbol')}` lines {ln.get('start')}-{ln.get('end')} ({ref.get('role')}){short_rev}")
         trace_lines.append("")
     (out_dir / "traceability.md").write_text("\n".join(trace_lines), encoding="utf-8")
 

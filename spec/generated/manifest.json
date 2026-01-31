@@ -1,13 +1,13 @@
 {
-  "ssot_version": "0.1.2",
-  "ssot_content_sha256": "fcd2f22ca60fb023ae4ca849345181e564445f11583b3747f51f78f855f9403a",
+  "ssot_version": "0.2.1",
+  "ssot_content_sha256": "34419e0f9b516f45168893261053b052afb628d554b1df1ae663596864001730",
   "source_commit": "286a78ef8c58ca4503af2b0211b3a2d7e385467c",
-  "generated_at": "2026-01-31T18:33:17Z",
+  "generated_at": "2026-01-31T19:19:33Z",
   "generated_files": {
-    "reticulum-wire-format.md": "15cad45ca033ba654be66f7acf452db0db92e734e0174b1b8581f831626e0e61",
-    "constants.md": "24f800a37d19fe656e1644150ba305c4937a3df83b7942848fa9763f0c0c5c7f",
-    "contexts.md": "75c264cb0112d7de4858b41801135fa38302b6278a1a7677f159450d30c2c3f3",
-    "layouts.md": "62efe2b673b75ed8e21e1961d0f8f2ce8d71109fb464498ce1fa902c2273621d",
-    "traceability.md": "a16a508e7629e5fd3a5acc98c0d6929db5a7d43d3f432ec0ff832516901f6644"
+    "reticulum-wire-format.md": "ec46ff6641f0dc81b93d3f253e47e9ce832b59a3054ac5b1beb62d17f67e8962",
+    "constants.md": "b7977e62135c8c402b97afaec78cfb1df654a15ea376fcd8b45ff3f536f3f998",
+    "contexts.md": "1eb1b5e377c0dad78b49132b5a537f9e4e13f65bc91b3595c12f656031596dd6",
+    "layouts.md": "bd768781cbe36779d1222cf3dc21f35db6fe96d845658a265352a6ff0ecfc448",
+    "traceability.md": "e869f29b170da2fc897cef2af444e607f9119516b12478cd35fe96378d32d5a4"
   }
 }

@@ -11,3 +11,6 @@ uv.lock.bak
 repomix.config.json
 .repomixignore
 repomix-output.xml
+
+# Vendor checkout is populated at build/CI time from SSOT; do not commit.
+vendor/reticulum-source/

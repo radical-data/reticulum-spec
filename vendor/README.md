@@ -2,8 +2,8 @@
 
 `vendor/reticulum-source/` is the **checkout of the code the SSOT references**. Validation **always** reads referenced files from this directory, never from the working tree.
 
-- **If this repo contains RNS/:** The vendor checkout is **the same repo at the pinned commit**. Populate by cloning this repo and checking out the exact commit in `spec_meta.source_of_truth.revision.commit`.
-- **CI:** Must populate `vendor/reticulum-source/` every run (checkout exact commit from SSOT header).
+- **Do not commit** `vendor/reticulum-source/`. It is **not** a git submodule. It is populated at CI and locally by cloning and checking out the commit in `spec_meta.source_of_truth.revision.commit`. The repo ignores `vendor/reticulum-source/` so it is never committed.
+- **CI:** Populates `vendor/reticulum-source/` every run (clone + checkout exact commit from SSOT).
 
 ## Populate locally
 
