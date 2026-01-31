@@ -1,0 +1,22 @@
+[project]
+name = "reticulum-spec-ssot"
+version = "0.1.0"
+description = "Reticulum wire-format SSOT toolchain (validate, compile, test)"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "jsonschema>=4.20.0,<5",
+    "PyYAML>=6.0.1,<7",
+    "ruamel.yaml>=0.18.0,<0.19",
+    "pytest>=7.0.0,<9",
+]
+
+[project.optional-dependencies]
+dev = []
+
+[dependency-groups]
+dev = []
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

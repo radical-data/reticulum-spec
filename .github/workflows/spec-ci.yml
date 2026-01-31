@@ -1,0 +1,62 @@
+# SSOT CI (plan section 12.2)
+# Trigger: pull_request, push to main.
+# Steps: checkout; Node (LTS) + pinned @stoplight/spectral-cli; Python + pinned deps;
+# populate vendor/reticulum-source; validate_ssot; pytest -q; compile_ssot; git diff --exit-code spec/generated.
+
+name: Spec CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  spec:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Node (LTS)
+        uses: actions/setup-node@v4
+        with:
+          node-version: "lts/*"
+
+      - name: Install Spectral (pinned)
+        run: npm install -g @stoplight/spectral-cli@6.11.0
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: "latest"
+
+      - name: Set up Python
+        run: uv python install 3.11
+
+      - name: Install Python dependencies (pinned)
+        run: uv sync
+
+      - name: Populate vendor/reticulum-source (pinned from SSOT)
+        run: |
+          VENDOR_URL=$(uv run python -c "import yaml; d=yaml.safe_load(open('spec/reticulum-wire-format.ssot.yaml')); print(d['spec_meta']['source_of_truth']['url'])")
+          VENDOR_COMMIT=$(uv run python -c "import yaml; d=yaml.safe_load(open('spec/reticulum-wire-format.ssot.yaml')); print(d['spec_meta']['source_of_truth']['revision']['commit'])")
+          test -n "$VENDOR_URL" || (echo "spec_meta.source_of_truth.url is empty" && exit 1)
+          test -n "$VENDOR_COMMIT" || (echo "spec_meta.source_of_truth.revision.commit is empty" && exit 1)
+          rm -rf vendor/reticulum-source
+          git clone "$VENDOR_URL" vendor/reticulum-source
+          cd vendor/reticulum-source
+          git checkout "$VENDOR_COMMIT"
+          cd ../..
+
+      - name: Validate SSOT
+        run: uv run python tools/validate_ssot.py
+
+      - name: Run tests
+        run: uv run pytest -q tests/
+
+      - name: Compile SSOT
+        run: uv run python tools/compile_ssot.py
+
+      - name: Fail if generated files changed
+        run: git diff --exit-code spec/generated

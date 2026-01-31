@@ -1,0 +1,25 @@
+# Signalling bytes encode/decode (plan section 11)
+# 3 bytes big-endian. MTU 21 bits (MTU_BYTEMASK 0x1FFFFF), Mode 3 bits (MODE_BYTEMASK 0xE0).
+# Encode: byte0=(Mode<<5)|(MTU>>16), byte1=(MTU>>8)&0xFF, byte2=MTU&0xFF.
+# Decode: Mode=(byte0>>5)&0x07; MTU=((byte0&0x1F)<<16)|(byte1<<8)|byte2.
+
+vectors:
+  - name: encode_mtu500_mode0
+    mtu: 500
+    mode: 0
+    expected_bytes_hex: "0001f4"
+
+  - name: decode_mtu500_mode0
+    bytes_hex: "0001f4"
+    expected_mtu: 500
+    expected_mode: 0
+
+  - name: encode_mtu_max_21bit
+    mtu: 2097151
+    mode: 7
+    expected_bytes_hex: "ffffff"
+
+  - name: decode_mtu_max_21bit
+    bytes_hex: "ffffff"
+    expected_mtu: 2097151
+    expected_mode: 7

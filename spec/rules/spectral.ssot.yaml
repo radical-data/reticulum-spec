@@ -1,0 +1,124 @@
+# Spectral ruleset for Reticulum Wire Format SSOT YAML (plan: full ruleset)
+# Run: spectral lint spec/reticulum-wire-format.ssot.yaml --ruleset=spec/rules/spectral.ssot.yaml
+# Requires @stoplight/spectral-cli (CI uses pinned version 6.11.0).
+
+extends: []
+
+rules:
+  spec-meta-required:
+    description: spec_meta must exist at root
+    given: $
+    severity: error
+    then:
+      field: spec_meta
+      function: truthy
+
+  atoms-required:
+    description: atoms must exist at root
+    given: $
+    severity: error
+    then:
+      field: atoms
+      function: truthy
+
+  atom-id-pattern:
+    description: Atom id must match RNS namespace pattern
+    given: $.atoms[*].id
+    severity: error
+    then:
+      field: id
+      function: pattern
+      functionOptions:
+        match: "^RNS\\.(PKT|IFAC|LNK|CHN|RES|TRN)\\.(CONST|LAYOUT|ALG|RULE|BEHAV)\\.[A-Z0-9_]+$"
+
+  atom-id-present:
+    description: Every atom must have an id
+    given: $.atoms[*]
+    severity: error
+    then:
+      field: id
+      function: truthy
+
+  statement-ends-with-full-stop:
+    description: statement must end with a full stop
+    given: $.atoms[*].statement
+    severity: error
+    then:
+      field: statement
+      function: pattern
+      functionOptions:
+        match: "\\.$"
+
+  references-role-enum:
+    description: references[].role must be definition, implementation, derivation, dispatch, or note
+    given: $.atoms[*].references[*].role
+    severity: error
+    then:
+      field: role
+      function: pattern
+      functionOptions:
+        match: "^(definition|implementation|derivation|dispatch|note)$"
+
+  references-file-no-dotdot:
+    description: references[].file must not contain ..
+    given: $.atoms[*].references[*].file
+    severity: error
+    then:
+      field: file
+      function: pattern
+      functionOptions:
+        notMatch: "\\.\\."
+
+  references-file-relative:
+    description: references[].file must be relative POSIX path (no leading slash)
+    given: $.atoms[*].references[*].file
+    severity: error
+    then:
+      field: file
+      function: pattern
+      functionOptions:
+        notMatch: "^/"
+
+  layout-has-fields:
+    description: If kind=layout, layout.fields must exist with name, offset, length
+    given: $.atoms[?(@.kind=='layout')]
+    severity: error
+    then:
+      - field: layout
+        function: truthy
+      - field: layout.fields
+        function: truthy
+
+  algorithm-has-steps:
+    description: If kind=algorithm, algorithm.steps must exist and be non-empty
+    given: $.atoms[?(@.kind=='algorithm')]
+    severity: error
+    then:
+      - field: algorithm
+        function: truthy
+      - field: algorithm.steps
+        function: truthy
+
+  constant-has-value:
+    description: If kind=constant, value must be present
+    given: $.atoms[?(@.kind=='constant')]
+    severity: error
+    then:
+      field: value
+      function: truthy
+
+  validation_rule-has-statement:
+    description: If kind=validation_rule, statement must be present
+    given: $.atoms[?(@.kind=='validation_rule')]
+    severity: error
+    then:
+      field: statement
+      function: truthy
+
+  behaviour-has-statement:
+    description: If kind=behaviour, statement must be present
+    given: $.atoms[?(@.kind=='behaviour')]
+    severity: error
+    then:
+      field: statement
+      function: truthy

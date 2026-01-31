@@ -1,0 +1,11 @@
+# IFAC masking/unmasking test vectors (plan section 11)
+# Canonical packet -> sign -> ifac bytes -> mask via HKDF(ifac, ifac_key) -> on-wire.
+# Inbound: extract ifac, derive mask, unmask, verify ifac == sign(canonical)[-ifac_size:], recover canonical.
+
+vectors:
+  - name: minimal_canonical_19_bytes_ifac_1_byte_zero_mask
+    description: "Canonical 19 bytes; ifac 1 byte 0x00; mask all zeros (identity). On-wire = (0x80,0x00)+ifac+raw[2:]."
+    canonical_packet_hex: "00000000000000000000000000000000000000"
+    ifac_bytes_hex: "00"
+    expected_on_wire_hex: "8000000000000000000000000000000000000000"
+    expected_recovered_canonical_hex: "00000000000000000000000000000000000000"

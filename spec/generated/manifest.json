@@ -1,0 +1,13 @@
+{
+  "ssot_version": "0.1.2",
+  "ssot_content_sha256": "fcd2f22ca60fb023ae4ca849345181e564445f11583b3747f51f78f855f9403a",
+  "source_commit": "286a78ef8c58ca4503af2b0211b3a2d7e385467c",
+  "generated_at": "2026-01-31T18:33:17Z",
+  "generated_files": {
+    "reticulum-wire-format.md": "15cad45ca033ba654be66f7acf452db0db92e734e0174b1b8581f831626e0e61",
+    "constants.md": "24f800a37d19fe656e1644150ba305c4937a3df83b7942848fa9763f0c0c5c7f",
+    "contexts.md": "75c264cb0112d7de4858b41801135fa38302b6278a1a7677f159450d30c2c3f3",
+    "layouts.md": "62efe2b673b75ed8e21e1961d0f8f2ce8d71109fb464498ce1fa902c2273621d",
+    "traceability.md": "a16a508e7629e5fd3a5acc98c0d6929db5a7d43d3f432ec0ff832516901f6644"
+  }
+}

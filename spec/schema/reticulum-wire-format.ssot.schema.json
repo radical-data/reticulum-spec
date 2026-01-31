@@ -1,0 +1,140 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://reticulum-spec/reticulum-wire-format.ssot.schema.json",
+  "title": "Reticulum Wire Format SSOT Schema",
+  "description": "JSON Schema Draft 2020-12 for SSOT YAML. Root: spec_meta + atoms only.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["spec_meta", "atoms"],
+  "properties": {
+    "spec_meta": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["spec_id", "ssot_version", "source_of_truth", "normative_language", "notation"],
+      "properties": {
+        "spec_id": { "const": "reticulum-wire-format" },
+        "ssot_version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(-[a-zA-Z0-9.-]+)?(\\+[a-zA-Z0-9.-]+)?$" },
+        "source_of_truth": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["url", "revision", "date"],
+          "properties": {
+            "url": { "type": "string", "format": "uri" },
+            "revision": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["commit"],
+              "properties": {
+                "commit": { "type": "string", "minLength": 1 }
+              }
+            },
+            "date": { "type": "string" }
+          }
+        },
+        "normative_language": { "type": "string" },
+        "notation": { "type": "string" }
+      }
+    },
+    "atoms": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/atom" }
+    }
+  },
+  "$defs": {
+    "reference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repo_revision", "file", "symbol", "lines", "role", "excerpt_hash"],
+      "properties": {
+        "repo_revision": { "type": "string" },
+        "file": { "type": "string" },
+        "symbol": { "type": "string" },
+        "lines": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["start", "end"],
+          "properties": {
+            "start": { "type": "integer", "minimum": 1 },
+            "end": { "type": "integer", "minimum": 1 }
+          }
+        },
+        "role": { "enum": ["definition", "implementation", "derivation", "dispatch", "note"] },
+        "excerpt_hash": { "type": "string", "pattern": "^[a-fA-F0-9]{64}$" }
+      }
+    },
+    "layout_field": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "offset", "length"],
+      "properties": {
+        "name": { "type": "string" },
+        "offset": { "type": "integer", "minimum": 0 },
+        "length": { "type": "integer", "minimum": 0 },
+        "allow_overlap": { "type": "boolean", "default": false },
+        "overlap_with": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "atom": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind", "normative", "statement", "references"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^RNS\\.(PKT|IFAC|LNK|CHN|RES|TRN)\\.(CONST|LAYOUT|ALG|RULE|BEHAV)\\.[A-Z0-9_]+$" },
+        "kind": { "enum": ["constant", "layout", "algorithm", "validation_rule", "behaviour"] },
+        "normative": { "enum": ["MUST", "MUST_NOT", "SHOULD", "SHOULD_NOT", "MAY", "NOTE"] },
+        "statement": { "type": "string" },
+        "references": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/reference" }
+        },
+        "value": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "number": {},
+            "unit": { "type": "string" },
+            "format": { "type": "string" },
+            "max_reasonable": {}
+          }
+        },
+        "constraints": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "min": {},
+            "max": {}
+          }
+        },
+        "tags": { "type": "array", "items": { "type": "string" } },
+        "layout": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "fields": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/layout_field" }
+            }
+          }
+        },
+        "algorithm": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "steps": { "type": "array", "minItems": 1, "items": { "type": "string" } }
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "kind": { "const": "layout" } }, "required": ["kind"] },
+          "then": { "required": ["layout"], "properties": { "layout": { "required": ["fields"] } } }
+        },
+        {
+          "if": { "properties": { "kind": { "const": "algorithm" } }, "required": ["kind"] },
+          "then": { "required": ["algorithm"], "properties": { "algorithm": { "required": ["steps"] } } }
+        }
+      ]
+    }
+  }
+}
