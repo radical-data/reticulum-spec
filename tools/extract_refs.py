@@ -12,10 +12,8 @@ Bounded behaviour (plan section 4):
      - Functions/classes: full def/class block (parse with ast for .py files).
 - If symbol occurs more than once, MUST fail and require contractor to specify range manually.
 
-Excerpt hashing (plan section 3):
+Schema vNext: repo_revision lives on manifest only; refs must not have repo_revision or excerpt_hash.
 - lines.start and lines.end are 1-indexed, inclusive.
-- Excerpt bytes: read file, normalise \\r\\n → \\n, splitlines(keepends=True), slice [start-1:end], join.
-- excerpt_hash = hex-encoded SHA-256 of those normalised bytes.
 """
 
 import argparse
@@ -111,7 +109,7 @@ def verify_ref(
     vendor_root: Path, ref: dict, expected_commit: str
 ) -> tuple[bool, str]:
     """
-    Verify one reference: file exists, symbol in range, excerpt_hash matches.
+    Verify one reference: file exists, symbol in range. Schema vNext: no repo_revision/excerpt_hash on ref.
     Returns (ok, error_message).
     """
     filepath = ref.get("file")
@@ -120,8 +118,9 @@ def verify_ref(
     path = vendor_root / filepath
     if not path.is_file():
         return (False, f"file not found under vendor: {filepath}")
-    if ref.get("repo_revision") != expected_commit:
-        return (False, f"repo_revision does not match spec_meta.source_of_truth.revision.commit")
+    # repo_revision is on manifest only; ref must not override it
+    if ref.get("repo_revision") is not None and ref.get("repo_revision") != expected_commit:
+        return (False, f"repo_revision on ref does not match manifest.repo_revision")
     lines_obj = ref.get("lines")
     if not lines_obj or "start" not in lines_obj or "end" not in lines_obj:
         return (False, "reference missing lines.start/end")
@@ -137,10 +136,7 @@ def verify_ref(
     slice_text = "\n".join(excerpt_lines[start - 1 : end])
     if symbol and symbol not in slice_text:
         return (False, f"symbol '{symbol}' not found in lines [{start},{end}]")
-    expected_hash = excerpt_hash(content, start, end)
-    actual_hash = ref.get("excerpt_hash", "")
-    if actual_hash and expected_hash != actual_hash:
-        return (False, f"excerpt_hash mismatch (expected {expected_hash[:16]}...)")
+    # Schema vNext: no excerpt_hash on ref
     return (True, "")
 
 
@@ -181,12 +177,10 @@ def main() -> int:
         print(f"SSOT not found: {ssot_path}", file=sys.stderr)
         return 1
     data, ruamel_yaml = load_ssot(ssot_path, for_write=args.fill and not args.no_write)
-    spec_meta = data.get("spec_meta") or {}
-    source = spec_meta.get("source_of_truth") or {}
-    rev = source.get("revision") or {}
-    expected_commit = (rev.get("commit") or "").strip()
+    manifest = data.get("manifest") or {}
+    expected_commit = (manifest.get("repo_revision") or "").strip()
     if not expected_commit:
-        print("spec_meta.source_of_truth.revision.commit is empty; set it to vendor commit.", file=sys.stderr)
+        print("manifest.repo_revision is required; set it to the vendor commit.", file=sys.stderr)
         return 1
     atoms = data.get("atoms") or []
     errors = []
@@ -195,7 +189,7 @@ def main() -> int:
         refs = atom.get("references") or []
         kind = atom.get("kind", "")
         for ref in refs:
-            ref["repo_revision"] = ref.get("repo_revision") or expected_commit
+            # Schema vNext: do not write repo_revision or excerpt_hash to refs
             ok, msg = verify_ref(vendor_root, ref, expected_commit)
             if not ok:
                 if "lines" in ref and ref.get("lines", {}).get("start"):
@@ -213,7 +207,7 @@ def main() -> int:
                         )
                     else:
                         ref["lines"] = {"start": rng[0], "end": rng[1]}
-                        ref["excerpt_hash"] = excerpt_hash(content, rng[0], rng[1])
+                        # Schema vNext: do not write excerpt_hash
                         modified = True
                 else:
                     errors.append(f"{atom.get('id', '?')} ref {ref.get('file')}: {msg}")

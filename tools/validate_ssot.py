@@ -3,10 +3,10 @@
 validate_ssot.py — Validate SSOT YAML: JSON Schema 2020-12, Spectral, bespoke checks.
 
 Order: Load SSOT → JSON Schema → Spectral → bespoke checks → extract_refs verification.
-Bespoke checks (plan section 9.1): ID uniqueness; repo_revision = spec_meta commit;
+Manifest.repo_revision is the single source of truth; atoms MUST NOT contain repo_revision or excerpt_hash.
+Bespoke checks: ID uniqueness; manifest required; ref must not have repo_revision/excerpt_hash;
 file exists under vendor; symbol in file; lines.start <= lines.end; slice contains symbol;
-excerpt_hash matches; layout offsets monotone, overlaps only with allow_overlap+overlap_with;
-constant sane bounds unless constraints/max_reasonable; version vs manifest; no timestamps in generated MD.
+layout offsets monotone; constant sane bounds; version vs manifest.
 """
 
 import hashlib
@@ -64,9 +64,12 @@ def main() -> int:
         return 1
 
     spec_meta = data.get("spec_meta")
+    manifest = data.get("manifest")
     atoms = data.get("atoms")
     if spec_meta is None:
         errors.append("Missing spec_meta")
+    if manifest is None:
+        errors.append("Missing manifest")
     if atoms is None:
         errors.append("Missing atoms")
     if not isinstance(atoms, list):
@@ -76,11 +79,12 @@ def main() -> int:
             print(e, file=sys.stderr)
         return 1
 
-    expected_commit = ""
-    if spec_meta:
-        sot = spec_meta.get("source_of_truth") or {}
-        rev = sot.get("revision") or {}
-        expected_commit = (rev.get("commit") or "").strip()
+    expected_commit = (manifest.get("repo_revision") or "").strip()
+    if not expected_commit:
+        errors.append("manifest.repo_revision is required and must be non-empty")
+        for e in errors:
+            print(e, file=sys.stderr)
+        return 1
 
     # If atoms exist: vendor checkout and pinned commit are mandatory; no skipping
     if atoms and len(atoms) > 0:
@@ -99,6 +103,15 @@ def main() -> int:
         errors.append("JSON Schema validation: jsonschema not installed. Run: uv sync")
     except Exception as e:
         errors.append(f"JSON Schema validation: {e}")
+
+    # 1b. Fail fast: reject forbidden fields in references (repo_revision, excerpt_hash)
+    for atom in atoms:
+        aid = atom.get("id", "?")
+        for ref in atom.get("references") or []:
+            if ref.get("repo_revision") is not None:
+                errors.append(f"ref must not contain repo_revision (use manifest.repo_revision) (atom {aid})")
+            if ref.get("excerpt_hash") is not None:
+                errors.append(f"ref must not contain excerpt_hash (Schema vNext) (atom {aid})")
 
     # 2. Spectral
     if spectral_rules.is_file():
@@ -132,8 +145,7 @@ def main() -> int:
 
         refs = atom.get("references") or []
         for ref in refs:
-            if ref.get("repo_revision") != expected_commit and expected_commit:
-                errors.append(f"ref repo_revision != spec_meta.source_of_truth.revision.commit (atom {aid})")
+            # repo_revision is on manifest only; ref must not have it (already checked above)
             fpath = ref.get("file")
             if not fpath:
                 errors.append(f"ref missing file (atom {aid})")
@@ -161,10 +173,7 @@ def main() -> int:
                                 symbol = ref.get("symbol", "")
                                 if symbol and symbol not in slice_text:
                                     errors.append(f"symbol '{symbol}' not in lines [{start},{end}] (atom {aid}, file {fpath})")
-                                want_hash = excerpt_hash_hex(content, start, end)
-                                got_hash = ref.get("excerpt_hash", "")
-                                if got_hash and want_hash != got_hash:
-                                    errors.append(f"excerpt_hash mismatch (atom {aid}, file {fpath})")
+                                # excerpt_hash removed in Schema vNext; no per-ref hash check
                             else:
                                 errors.append(f"lines [{start},{end}] out of range (atom {aid}, file {fpath})")
                         except Exception as e:

@@ -1,11 +1,11 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://reticulum-spec/reticulum-wire-format.ssot.schema.json",
-  "title": "Reticulum Wire Format SSOT Schema",
-  "description": "JSON Schema Draft 2020-12 for SSOT YAML. Root: spec_meta + atoms only.",
+  "title": "Reticulum Wire Format SSOT Schema (vNext)",
+  "description": "JSON Schema Draft 2020-12 for SSOT YAML. Root: spec_meta, manifest (single source of truth), atoms. Atoms MUST NOT contain repo_revision or excerpt_hash.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["spec_meta", "atoms"],
+  "required": ["spec_meta", "manifest", "atoms"],
   "properties": {
     "spec_meta": {
       "type": "object",
@@ -35,6 +35,17 @@
         "notation": { "type": "string" }
       }
     },
+    "manifest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repo_revision"],
+      "properties": {
+        "repo_revision": { "type": "string", "minLength": 1 },
+        "source_repo": { "type": "string" },
+        "created_at": { "type": "string" },
+        "schema_version": { "type": "string" }
+      }
+    },
     "atoms": {
       "type": "array",
       "items": { "$ref": "#/$defs/atom" }
@@ -44,9 +55,8 @@
     "reference": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["repo_revision", "file", "symbol", "lines", "role", "excerpt_hash"],
+      "required": ["file", "symbol", "lines", "role"],
       "properties": {
-        "repo_revision": { "type": "string" },
         "file": { "type": "string" },
         "symbol": { "type": "string" },
         "lines": {
@@ -58,8 +68,7 @@
             "end": { "type": "integer", "minimum": 1 }
           }
         },
-        "role": { "enum": ["definition", "implementation", "derivation", "dispatch", "note"] },
-        "excerpt_hash": { "type": "string", "pattern": "^[a-fA-F0-9]{64}$" }
+        "role": { "enum": ["definition", "implementation", "derivation", "dispatch", "note"] }
       }
     },
     "layout_field": {

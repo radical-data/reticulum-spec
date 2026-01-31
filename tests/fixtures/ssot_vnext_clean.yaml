@@ -1,0 +1,28 @@
+# Schema vNext: manifest.repo_revision, refs without repo_revision or excerpt_hash.
+spec_meta:
+  spec_id: reticulum-wire-format
+  ssot_version: "0.3.0"
+  source_of_truth:
+    url: https://github.com/markqvist/Reticulum
+    revision:
+      commit: "286a78ef8c58ca4503af2b0211b3a2d7e385467c"
+    date: "2026-01-17T00:00:00Z"
+  normative_language: ""
+  notation: ""
+
+manifest:
+  repo_revision: "286a78ef8c58ca4503af2b0211b3a2d7e385467c"
+
+atoms:
+  - id: RNS.PKT.CONST.HEADER_MINSIZE
+    kind: constant
+    normative: MUST
+    statement: "Min header 19 bytes."
+    value:
+      number: 19
+      unit: "bytes"
+    references:
+      - file: RNS/Reticulum.py
+        symbol: HEADER_MINSIZE
+        lines: { start: 147, end: 154 }
+        role: definition

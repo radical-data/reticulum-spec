@@ -79,6 +79,38 @@ rules:
       functionOptions:
         notMatch: "^/"
 
+  references-no-repo-revision:
+    description: references MUST NOT contain repo_revision (use manifest.repo_revision)
+    given: $.atoms[*].references[*]
+    severity: error
+    then:
+      field: repo_revision
+      function: falsy
+
+  references-no-excerpt-hash:
+    description: references MUST NOT contain excerpt_hash (Schema vNext)
+    given: $.atoms[*].references[*]
+    severity: error
+    then:
+      field: excerpt_hash
+      function: falsy
+
+  manifest-required:
+    description: manifest must exist at root (Schema vNext)
+    given: $
+    severity: error
+    then:
+      field: manifest
+      function: truthy
+
+  manifest-repo-revision-required:
+    description: manifest.repo_revision is required
+    given: $.manifest
+    severity: error
+    then:
+      field: repo_revision
+      function: truthy
+
   layout-has-fields:
     description: If kind=layout, layout.fields must exist with name, offset, length
     given: $.atoms[?(@.kind=='layout')]

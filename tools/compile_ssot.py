@@ -53,12 +53,14 @@ def main() -> int:
         return 1
 
     spec_meta = data.get("spec_meta") or {}
+    manifest = data.get("manifest") or {}
     atoms = data.get("atoms") or []
     spec_id = spec_meta.get("spec_id", "reticulum-wire-format")
     ssot_version = spec_meta.get("ssot_version", "0.0.0")
-    sot = spec_meta.get("source_of_truth") or {}
-    rev = sot.get("revision") or {}
-    source_commit = (rev.get("commit") or "").strip()
+    source_commit = (manifest.get("repo_revision") or "").strip()
+    if not source_commit:
+        print("manifest.repo_revision is required.", file=sys.stderr)
+        return 1
 
     # Version bump enforcement: if manifest exists and ssot_version unchanged but content hash changed, fail
     manifest_path = out_dir / "manifest.json"
@@ -94,11 +96,7 @@ def main() -> int:
                 fpath = ref.get("file", "")
                 sym = ref.get("symbol", "")
                 ln = ref.get("lines") or {}
-                rev = ref.get("repo_revision", "")
-                short_rev = rev[:7] if rev else ""
                 ref_line = f"  - {fpath} ({sym}) lines {ln.get('start', '?')}-{ln.get('end', '?')}"
-                if short_rev:
-                    ref_line += f" @ {short_rev}"
                 lines.append(ref_line)
         if atom.get("value"):
             lines.append(f"- **Value:** {atom['value']}")
@@ -160,9 +158,7 @@ def main() -> int:
         trace_lines.append(f"## {aid}")
         for ref in (atom.get("references") or []):
             ln = ref.get("lines") or {}
-            rev = ref.get("repo_revision", "")
-            short_rev = f" @ {rev[:7]}" if rev else ""
-            trace_lines.append(f"- {ref.get('file')} `{ref.get('symbol')}` lines {ln.get('start')}-{ln.get('end')} ({ref.get('role')}){short_rev}")
+            trace_lines.append(f"- {ref.get('file')} `{ref.get('symbol')}` lines {ln.get('start')}-{ln.get('end')} ({ref.get('role')})")
         trace_lines.append("")
     (out_dir / "traceability.md").write_text("\n".join(trace_lines), encoding="utf-8")
 
