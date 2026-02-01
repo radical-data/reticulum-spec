@@ -60,3 +60,9 @@ jobs:
 
       - name: Fail if generated files changed
         run: git diff --exit-code spec/generated
+
+      - name: Generate vectors
+        run: uv run python tools/generate_vectors.py
+
+      - name: Fail if vectors changed
+        run: git diff --exit-code tests/vectors

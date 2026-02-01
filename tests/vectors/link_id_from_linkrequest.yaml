@@ -1,19 +1,16 @@
-# Link ID from LINKREQUEST test vectors (plan section 11)
-# Link ID = truncated hash (first 16 bytes of SHA-256) of hashable part, with last (len(data)-64) bytes stripped if len(data)>64.
-# So link_id MUST be stable when signalling bytes are added or removed.
-
 vectors:
   - name: linkrequest_without_signalling
-    description: "LINKREQUEST packet, payload 64 bytes or less; no signalling bytes."
-    hashable_part_hex: "000000000000000000000000000000000000"
-    expected_link_id_hex: "60daa3a5f7dbfa200f8c82840ecf5b426"
-
+    description: 'LINKREQUEST: hashable part 64 bytes; data_len=64, no strip.'
+    hashable_part_before_strip_hex: '00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'
+    data_len: 64
+    expected_link_id_hex: 'f5a5fd42d16a20302798ef6ed309979b'
   - name: linkrequest_with_signalling
-    description: "Same hashable part as without signalling (signalling stripped before hash)."
-    hashable_part_hex: "000000000000000000000000000000000000"
-    expected_link_id_hex: "60daa3a5f7dbfa200f8c82840ecf5b426"
-
+    description: Same 64-byte hashable prefix + 3 signalling bytes; data_len=67, strip last 3 → same link_id.
+    hashable_part_before_strip_hex: '00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000aabbcc'
+    data_len: 67
+    expected_link_id_hex: 'f5a5fd42d16a20302798ef6ed309979b'
   - name: link_id_stability
-    description: "expected_link_id_hex MUST be identical for with and without signalling when hashable part (before stripping) matches."
-    hashable_part_hex: "000000000000000000000000000000000000"
-    expected_link_id_hex: "60daa3a5f7dbfa200f8c82840ecf5b426"
+    description: 'Stability: identical hashable part after strip → identical link_id.'
+    hashable_part_before_strip_hex: '00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'
+    data_len: 64
+    expected_link_id_hex: 'f5a5fd42d16a20302798ef6ed309979b'

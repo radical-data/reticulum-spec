@@ -1,18 +1,25 @@
-# Hashable part test vectors (plan section 11)
-# Rule: first byte masked with 0b00001111; HEADER_1 append raw[2:], HEADER_2 append raw[18:].
-# Hash = SHA-256(hashable_bytes); truncated = first 16 bytes.
-
 vectors:
   - name: HEADER_1_minimal
-    description: "Minimal HEADER_1: flags=0, hops=0, dest_hash=16 zeros, context=0. Total 19 bytes (38 hex)."
-    packet_hex: "00000000000000000000000000000000000000"
+    description: 'Minimal HEADER_1: flags=0, hops=0, dest_hash=16 zeros, context=0. Total 19 bytes.'
+    packet_hex: '00000000000000000000000000000000000000'
     header_type: 1
-    expected_hashable_hex: "000000000000000000000000000000000000"
-    expected_sha256_hex: "60daa3a5f7dbfa200f8c82840ecf5b42640b70f3b7218a4c6bbd67db542e75a4"
-
+    expected_hashable_hex: '000000000000000000000000000000000000'
+    expected_sha256_hex: '60daa3a5f7dbfa200f8c82840ecf5b42640b70f3b7218a4c6bbd67db542e75a4'
   - name: HEADER_2_minimal
-    description: "Minimal HEADER_2: flags=0x40, hops=0, transport_id=16 zeros, dest_hash=16 zeros, context=0. Packet 38 bytes (76 hex); hashable = first byte masked + raw[18:] = 21 bytes (42 hex)."
-    packet_hex: "4000000000000000000000000000000000000000000000000000000000000000000000000000"
+    description: 'Minimal HEADER_2: flags=0x40, hops=0, transport_id=16 zeros, dest_hash=16 zeros, context=0; plus 3 bytes payload.'
+    packet_hex: '4000000000000000000000000000000000000000000000000000000000000000000000000000'
     header_type: 2
-    expected_hashable_hex: "000000000000000000000000000000000000000000"
-    expected_sha256_hex: "c90232586b801f9558a76f2f963eccd831d9fe6775e4c8f1446b2331aa2132f2"
+    expected_hashable_hex: '000000000000000000000000000000000000000000'
+    expected_sha256_hex: 'c90232586b801f9558a76f2f963eccd831d9fe6775e4c8f1446b2331aa2132f2'
+  - name: HEADER_1_flags_upper_bits
+    description: HEADER_1 flags=0xE0 (IFAC|header-type|context); hashable byte0 masked to 0x00.
+    packet_hex: 'e0000000000000000000000000000000000000'
+    header_type: 1
+    expected_hashable_hex: '000000000000000000000000000000000000'
+    expected_sha256_hex: '60daa3a5f7dbfa200f8c82840ecf5b42640b70f3b7218a4c6bbd67db542e75a4'
+  - name: HEADER_2_zero_payload
+    description: HEADER_2 minimal header 35 bytes, no payload.
+    packet_hex: '4000000000000000000000000000000000000000000000000000000000000000000000'
+    header_type: 2
+    expected_hashable_hex: '000000000000000000000000000000000000'
+    expected_sha256_hex: '60daa3a5f7dbfa200f8c82840ecf5b42640b70f3b7218a4c6bbd67db542e75a4'

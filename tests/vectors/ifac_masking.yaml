@@ -1,11 +1,31 @@
-# IFAC masking/unmasking test vectors (plan section 11)
-# Canonical packet -> sign -> ifac bytes -> mask via HKDF(ifac, ifac_key) -> on-wire.
-# Inbound: extract ifac, derive mask, unmask, verify ifac == sign(canonical)[-ifac_size:], recover canonical.
-
+meta:
+  hkdf_note: "Mask derivation (RFC 5869): HKDF-Extract(salt=ifac_key, IKM=ifac_bytes); HKDF-Expand(PRK, info=b'', L=len(packet))."
 vectors:
-  - name: minimal_canonical_19_bytes_ifac_1_byte_zero_mask
-    description: "Canonical 19 bytes; ifac 1 byte 0x00; mask all zeros (identity). On-wire = (0x80,0x00)+ifac+raw[2:]."
-    canonical_packet_hex: "00000000000000000000000000000000000000"
-    ifac_bytes_hex: "00"
-    expected_on_wire_hex: "8000000000000000000000000000000000000000"
-    expected_recovered_canonical_hex: "00000000000000000000000000000000000000"
+  - name: canonical19_ifac1_key0
+    description: Canonical 19 bytes; IFAC=0x00; ifac_key=32 zero bytes; mask/unmask round-trip.
+    canonical_packet_hex: '00000000000000000000000000000000000000'
+    ifac_bytes_hex: '00'
+    ifac_key_hex: '0000000000000000000000000000000000000000000000000000000000000000'
+    expected_on_wire_hex: 'ca0d00522019f6622a278db5e2a2131a52a626a7'
+    expected_recovered_canonical_hex: '00000000000000000000000000000000000000'
+  - name: canonical19_ifac1_key11
+    description: Non-zero canonical; IFAC=0xa5; ifac_key=0x11*32; transform determinism + round-trip.
+    canonical_packet_hex: '40010101010101010101010101010101010101'
+    ifac_bytes_hex: 'a5'
+    ifac_key_hex: '1111111111111111111111111111111111111111111111111111111111111111'
+    expected_on_wire_hex: 'a10ba53f99bae53527e55f504b14ee8a6a3a8e99'
+    expected_recovered_canonical_hex: '40010101010101010101010101010101010101'
+  - name: canonical25_ifac8_keyaa
+    description: Canonical 25 bytes; IFAC 8 bytes; non-zero ifac_key; round-trip.
+    canonical_packet_hex: '00000000000000000000000000000000000000000000000000'
+    ifac_bytes_hex: 'deadbeefcafebabe'
+    ifac_key_hex: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+    expected_on_wire_hex: 'f5e0deadbeefcafebabe653a175bf5d64e581597465afd30fb667fa81f75cb899b'
+    expected_recovered_canonical_hex: '00000000000000000000000000000000000000000000000000'
+  - name: canonical35_ifac16
+    description: HEADER_2-style 35 bytes; IFAC 16 bytes; round-trip.
+    canonical_packet_hex: '4000000000000000000000000000000000000000000000000000000000000000000000'
+    ifac_bytes_hex: '00000000000000000000000000000001'
+    ifac_key_hex: '1111111111111111111111111111111111111111111111111111111111111111'
+    expected_on_wire_hex: 'f2ce000000000000000000000000000000019c60d842f4eb4aa05ec23c51f8e84464796ec94e43c44f1c1c5b3e40e32b920c90'
+    expected_recovered_canonical_hex: '4000000000000000000000000000000000000000000000000000000000000000000000'

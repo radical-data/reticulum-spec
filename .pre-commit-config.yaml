@@ -29,3 +29,15 @@ repos:
         entry: bash -c 'git diff --exit-code spec/generated || (echo "spec/generated has uncommitted changes; run uv run python tools/compile_ssot.py and commit." && exit 1)'
         language: system
         pass_filenames: false
+
+      - id: generate-vectors
+        name: Generate vectors
+        entry: uv run python tools/generate_vectors.py
+        language: system
+        pass_filenames: false
+
+      - id: vectors-diff
+        name: Vector fixtures up to date
+        entry: bash -c 'git diff --exit-code tests/vectors || (echo "tests/vectors has uncommitted changes; run uv run python tools/generate_vectors.py and commit." && exit 1)'
+        language: system
+        pass_filenames: false

@@ -2,7 +2,7 @@
   "ssot_version": "0.4.0",
   "ssot_content_sha256": "7e92aa59446955a7156230586e589a9bf1ac5259e18c3fbee26eca369cc3313d",
   "source_commit": "286a78ef8c58ca4503af2b0211b3a2d7e385467c",
-  "generated_at": "2026-01-31T19:53:14Z",
+  "generated_at": "2026-01-17T00:00:00Z",
   "generated_files": {
     "reticulum-wire-format.md": "24e090808c3e74676157a46b90069ce10504d000869847ae1a641bc0c153de48",
     "constants.md": "f6e328941d379f7c0dc36d2eabfd65cf4848d86d842934427b87534177a992d5",

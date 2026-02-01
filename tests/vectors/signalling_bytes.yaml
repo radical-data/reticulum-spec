@@ -1,25 +1,398 @@
-# Signalling bytes encode/decode (plan section 11)
-# 3 bytes big-endian. MTU 21 bits (MTU_BYTEMASK 0x1FFFFF), Mode 3 bits (MODE_BYTEMASK 0xE0).
-# Encode: byte0=(Mode<<5)|(MTU>>16), byte1=(MTU>>8)&0xFF, byte2=MTU&0xFF.
-# Decode: Mode=(byte0>>5)&0x07; MTU=((byte0&0x1F)<<16)|(byte1<<8)|byte2.
-
+meta:
+  mtu_bytemask: 2097151
+  mode_bytemask: 224
+  link_mtu_size: 3
 vectors:
+  - name: encode_mtu0_mode0
+    mtu: 0
+    mode: 0
+    expected_bytes_hex: '000000'
+  - name: encode_mtu0_mode1
+    mtu: 0
+    mode: 1
+    expected_bytes_hex: '200000'
+  - name: encode_mtu0_mode2
+    mtu: 0
+    mode: 2
+    expected_bytes_hex: '400000'
+  - name: encode_mtu0_mode3
+    mtu: 0
+    mode: 3
+    expected_bytes_hex: '600000'
+  - name: encode_mtu0_mode4
+    mtu: 0
+    mode: 4
+    expected_bytes_hex: '800000'
+  - name: encode_mtu0_mode5
+    mtu: 0
+    mode: 5
+    expected_bytes_hex: 'a00000'
+  - name: encode_mtu0_mode6
+    mtu: 0
+    mode: 6
+    expected_bytes_hex: 'c00000'
+  - name: encode_mtu0_mode7
+    mtu: 0
+    mode: 7
+    expected_bytes_hex: 'e00000'
+  - name: encode_mtu1_mode0
+    mtu: 1
+    mode: 0
+    expected_bytes_hex: '000001'
+  - name: encode_mtu1_mode1
+    mtu: 1
+    mode: 1
+    expected_bytes_hex: '200001'
+  - name: encode_mtu1_mode2
+    mtu: 1
+    mode: 2
+    expected_bytes_hex: '400001'
+  - name: encode_mtu1_mode3
+    mtu: 1
+    mode: 3
+    expected_bytes_hex: '600001'
+  - name: encode_mtu1_mode4
+    mtu: 1
+    mode: 4
+    expected_bytes_hex: '800001'
+  - name: encode_mtu1_mode5
+    mtu: 1
+    mode: 5
+    expected_bytes_hex: 'a00001'
+  - name: encode_mtu1_mode6
+    mtu: 1
+    mode: 6
+    expected_bytes_hex: 'c00001'
+  - name: encode_mtu1_mode7
+    mtu: 1
+    mode: 7
+    expected_bytes_hex: 'e00001'
   - name: encode_mtu500_mode0
     mtu: 500
     mode: 0
-    expected_bytes_hex: "0001f4"
-
-  - name: decode_mtu500_mode0
-    bytes_hex: "0001f4"
-    expected_mtu: 500
-    expected_mode: 0
-
-  - name: encode_mtu_max_21bit
+    expected_bytes_hex: '0001f4'
+  - name: encode_mtu500_mode1
+    mtu: 500
+    mode: 1
+    expected_bytes_hex: '2001f4'
+  - name: encode_mtu500_mode2
+    mtu: 500
+    mode: 2
+    expected_bytes_hex: '4001f4'
+  - name: encode_mtu500_mode3
+    mtu: 500
+    mode: 3
+    expected_bytes_hex: '6001f4'
+  - name: encode_mtu500_mode4
+    mtu: 500
+    mode: 4
+    expected_bytes_hex: '8001f4'
+  - name: encode_mtu500_mode5
+    mtu: 500
+    mode: 5
+    expected_bytes_hex: 'a001f4'
+  - name: encode_mtu500_mode6
+    mtu: 500
+    mode: 6
+    expected_bytes_hex: 'c001f4'
+  - name: encode_mtu500_mode7
+    mtu: 500
+    mode: 7
+    expected_bytes_hex: 'e001f4'
+  - name: encode_mtu2047_mode0
+    mtu: 2047
+    mode: 0
+    expected_bytes_hex: '0007ff'
+  - name: encode_mtu2047_mode1
+    mtu: 2047
+    mode: 1
+    expected_bytes_hex: '2007ff'
+  - name: encode_mtu2047_mode2
+    mtu: 2047
+    mode: 2
+    expected_bytes_hex: '4007ff'
+  - name: encode_mtu2047_mode3
+    mtu: 2047
+    mode: 3
+    expected_bytes_hex: '6007ff'
+  - name: encode_mtu2047_mode4
+    mtu: 2047
+    mode: 4
+    expected_bytes_hex: '8007ff'
+  - name: encode_mtu2047_mode5
+    mtu: 2047
+    mode: 5
+    expected_bytes_hex: 'a007ff'
+  - name: encode_mtu2047_mode6
+    mtu: 2047
+    mode: 6
+    expected_bytes_hex: 'c007ff'
+  - name: encode_mtu2047_mode7
+    mtu: 2047
+    mode: 7
+    expected_bytes_hex: 'e007ff'
+  - name: encode_mtu65535_mode0
+    mtu: 65535
+    mode: 0
+    expected_bytes_hex: '00ffff'
+  - name: encode_mtu65535_mode1
+    mtu: 65535
+    mode: 1
+    expected_bytes_hex: '20ffff'
+  - name: encode_mtu65535_mode2
+    mtu: 65535
+    mode: 2
+    expected_bytes_hex: '40ffff'
+  - name: encode_mtu65535_mode3
+    mtu: 65535
+    mode: 3
+    expected_bytes_hex: '60ffff'
+  - name: encode_mtu65535_mode4
+    mtu: 65535
+    mode: 4
+    expected_bytes_hex: '80ffff'
+  - name: encode_mtu65535_mode5
+    mtu: 65535
+    mode: 5
+    expected_bytes_hex: 'a0ffff'
+  - name: encode_mtu65535_mode6
+    mtu: 65535
+    mode: 6
+    expected_bytes_hex: 'c0ffff'
+  - name: encode_mtu65535_mode7
+    mtu: 65535
+    mode: 7
+    expected_bytes_hex: 'e0ffff'
+  - name: encode_mtu2097151_mode0
+    mtu: 2097151
+    mode: 0
+    expected_bytes_hex: '1fffff'
+  - name: encode_mtu2097151_mode1
+    mtu: 2097151
+    mode: 1
+    expected_bytes_hex: '3fffff'
+  - name: encode_mtu2097151_mode2
+    mtu: 2097151
+    mode: 2
+    expected_bytes_hex: '5fffff'
+  - name: encode_mtu2097151_mode3
+    mtu: 2097151
+    mode: 3
+    expected_bytes_hex: '7fffff'
+  - name: encode_mtu2097151_mode4
+    mtu: 2097151
+    mode: 4
+    expected_bytes_hex: '9fffff'
+  - name: encode_mtu2097151_mode5
+    mtu: 2097151
+    mode: 5
+    expected_bytes_hex: 'bfffff'
+  - name: encode_mtu2097151_mode6
+    mtu: 2097151
+    mode: 6
+    expected_bytes_hex: 'dfffff'
+  - name: encode_mtu2097151_mode7
     mtu: 2097151
     mode: 7
-    expected_bytes_hex: "ffffff"
-
-  - name: decode_mtu_max_21bit
-    bytes_hex: "ffffff"
+    expected_bytes_hex: 'ffffff'
+  - name: decode_mtu0_mode0
+    bytes_hex: '000000'
+    expected_mtu: 0
+    expected_mode: 0
+  - name: decode_mtu0_mode1
+    bytes_hex: '200000'
+    expected_mtu: 0
+    expected_mode: 1
+  - name: decode_mtu0_mode2
+    bytes_hex: '400000'
+    expected_mtu: 0
+    expected_mode: 2
+  - name: decode_mtu0_mode3
+    bytes_hex: '600000'
+    expected_mtu: 0
+    expected_mode: 3
+  - name: decode_mtu0_mode4
+    bytes_hex: '800000'
+    expected_mtu: 0
+    expected_mode: 4
+  - name: decode_mtu0_mode5
+    bytes_hex: 'a00000'
+    expected_mtu: 0
+    expected_mode: 5
+  - name: decode_mtu0_mode6
+    bytes_hex: 'c00000'
+    expected_mtu: 0
+    expected_mode: 6
+  - name: decode_mtu0_mode7
+    bytes_hex: 'e00000'
+    expected_mtu: 0
+    expected_mode: 7
+  - name: decode_mtu1_mode0
+    bytes_hex: '000001'
+    expected_mtu: 1
+    expected_mode: 0
+  - name: decode_mtu1_mode1
+    bytes_hex: '200001'
+    expected_mtu: 1
+    expected_mode: 1
+  - name: decode_mtu1_mode2
+    bytes_hex: '400001'
+    expected_mtu: 1
+    expected_mode: 2
+  - name: decode_mtu1_mode3
+    bytes_hex: '600001'
+    expected_mtu: 1
+    expected_mode: 3
+  - name: decode_mtu1_mode4
+    bytes_hex: '800001'
+    expected_mtu: 1
+    expected_mode: 4
+  - name: decode_mtu1_mode5
+    bytes_hex: 'a00001'
+    expected_mtu: 1
+    expected_mode: 5
+  - name: decode_mtu1_mode6
+    bytes_hex: 'c00001'
+    expected_mtu: 1
+    expected_mode: 6
+  - name: decode_mtu1_mode7
+    bytes_hex: 'e00001'
+    expected_mtu: 1
+    expected_mode: 7
+  - name: decode_mtu500_mode0
+    bytes_hex: '0001f4'
+    expected_mtu: 500
+    expected_mode: 0
+  - name: decode_mtu500_mode1
+    bytes_hex: '2001f4'
+    expected_mtu: 500
+    expected_mode: 1
+  - name: decode_mtu500_mode2
+    bytes_hex: '4001f4'
+    expected_mtu: 500
+    expected_mode: 2
+  - name: decode_mtu500_mode3
+    bytes_hex: '6001f4'
+    expected_mtu: 500
+    expected_mode: 3
+  - name: decode_mtu500_mode4
+    bytes_hex: '8001f4'
+    expected_mtu: 500
+    expected_mode: 4
+  - name: decode_mtu500_mode5
+    bytes_hex: 'a001f4'
+    expected_mtu: 500
+    expected_mode: 5
+  - name: decode_mtu500_mode6
+    bytes_hex: 'c001f4'
+    expected_mtu: 500
+    expected_mode: 6
+  - name: decode_mtu500_mode7
+    bytes_hex: 'e001f4'
+    expected_mtu: 500
+    expected_mode: 7
+  - name: decode_mtu2047_mode0
+    bytes_hex: '0007ff'
+    expected_mtu: 2047
+    expected_mode: 0
+  - name: decode_mtu2047_mode1
+    bytes_hex: '2007ff'
+    expected_mtu: 2047
+    expected_mode: 1
+  - name: decode_mtu2047_mode2
+    bytes_hex: '4007ff'
+    expected_mtu: 2047
+    expected_mode: 2
+  - name: decode_mtu2047_mode3
+    bytes_hex: '6007ff'
+    expected_mtu: 2047
+    expected_mode: 3
+  - name: decode_mtu2047_mode4
+    bytes_hex: '8007ff'
+    expected_mtu: 2047
+    expected_mode: 4
+  - name: decode_mtu2047_mode5
+    bytes_hex: 'a007ff'
+    expected_mtu: 2047
+    expected_mode: 5
+  - name: decode_mtu2047_mode6
+    bytes_hex: 'c007ff'
+    expected_mtu: 2047
+    expected_mode: 6
+  - name: decode_mtu2047_mode7
+    bytes_hex: 'e007ff'
+    expected_mtu: 2047
+    expected_mode: 7
+  - name: decode_mtu65535_mode0
+    bytes_hex: '00ffff'
+    expected_mtu: 65535
+    expected_mode: 0
+  - name: decode_mtu65535_mode1
+    bytes_hex: '20ffff'
+    expected_mtu: 65535
+    expected_mode: 1
+  - name: decode_mtu65535_mode2
+    bytes_hex: '40ffff'
+    expected_mtu: 65535
+    expected_mode: 2
+  - name: decode_mtu65535_mode3
+    bytes_hex: '60ffff'
+    expected_mtu: 65535
+    expected_mode: 3
+  - name: decode_mtu65535_mode4
+    bytes_hex: '80ffff'
+    expected_mtu: 65535
+    expected_mode: 4
+  - name: decode_mtu65535_mode5
+    bytes_hex: 'a0ffff'
+    expected_mtu: 65535
+    expected_mode: 5
+  - name: decode_mtu65535_mode6
+    bytes_hex: 'c0ffff'
+    expected_mtu: 65535
+    expected_mode: 6
+  - name: decode_mtu65535_mode7
+    bytes_hex: 'e0ffff'
+    expected_mtu: 65535
+    expected_mode: 7
+  - name: decode_mtu2097151_mode0
+    bytes_hex: '1fffff'
+    expected_mtu: 2097151
+    expected_mode: 0
+  - name: decode_mtu2097151_mode1
+    bytes_hex: '3fffff'
+    expected_mtu: 2097151
+    expected_mode: 1
+  - name: decode_mtu2097151_mode2
+    bytes_hex: '5fffff'
+    expected_mtu: 2097151
+    expected_mode: 2
+  - name: decode_mtu2097151_mode3
+    bytes_hex: '7fffff'
+    expected_mtu: 2097151
+    expected_mode: 3
+  - name: decode_mtu2097151_mode4
+    bytes_hex: '9fffff'
+    expected_mtu: 2097151
+    expected_mode: 4
+  - name: decode_mtu2097151_mode5
+    bytes_hex: 'bfffff'
+    expected_mtu: 2097151
+    expected_mode: 5
+  - name: decode_mtu2097151_mode6
+    bytes_hex: 'dfffff'
+    expected_mtu: 2097151
+    expected_mode: 6
+  - name: decode_mtu2097151_mode7
+    bytes_hex: 'ffffff'
     expected_mtu: 2097151
     expected_mode: 7
+  - name: encode_mtu_overflow_21bit
+    description: MTU 0x200000 (22nd bit set) masked to 21 bits; encodes as 0.
+    mtu: 2097152
+    mode: 0
+    expected_bytes_hex: '000000'
+  - name: decode_mtu_overflow_21bit
+    bytes_hex: '000000'
+    expected_mtu: 0
+    expected_mode: 0
