@@ -1,8 +1,7 @@
 {
   "ssot_version": "0.4.0",
-  "ssot_content_sha256": "7e92aa59446955a7156230586e589a9bf1ac5259e18c3fbee26eca369cc3313d",
+  "ssot_content_sha256": "18e3d5f5dff52c512c720a4a8dd92f45e5acef123293f0918c78d318d71df4a6",
   "source_commit": "286a78ef8c58ca4503af2b0211b3a2d7e385467c",
-  "generated_at": "2026-01-17T00:00:00Z",
   "generated_files": {
     "reticulum-wire-format.md": "24e090808c3e74676157a46b90069ce10504d000869847ae1a641bc0c153de48",
     "constants.md": "f6e328941d379f7c0dc36d2eabfd65cf4848d86d842934427b87534177a992d5",
@@ -10,6 +9,7 @@
     "layouts.md": "0ad0aabafd401e450e5d16123f23e0f376e231445e37ff7a8bc4af5a02051306",
     "traceability.md": "c2ceb1bd99c7ad38bfaaae477fdc89538c85649bb5e41cee4afd045b46e76e8b"
   },
+  "generated_at": "2026-01-17T00:00:00Z",
   "excerpts_sha256": {
     "RNS.PKT.LAYOUT.HEADER_1#0": "f1e88f23e028439f88e1f138629afebcb8508b33603a692e1f3ef6a8211ec136",
     "RNS.PKT.LAYOUT.HEADER_1#1": "93390e535173302ab70d7b67e63fc8ede2683fea5d0ec07f278b15698d5ae3e3",

@@ -173,6 +173,7 @@ def _hex_quoted(s: str) -> Any:
     """Emit hex as single-quoted YAML scalar for parser safety (avoid numeric interpretation, preserve leading zeros)."""
     try:
         from ruamel.yaml.scalarstring import SingleQuotedScalarString
+
         return SingleQuotedScalarString(s.lower())
     except ImportError:
         return s.lower()
@@ -206,53 +207,61 @@ def gen_hashable_part_vectors() -> dict[str, Any]:
     packet_hex = "00" * 19
     packet = bytes.fromhex(packet_hex)
     hp = hashable_part(packet, header_type=1)
-    vectors.append({
-        "name": "HEADER_1_minimal",
-        "description": "Minimal HEADER_1: flags=0, hops=0, dest_hash=16 zeros, context=0. Total 19 bytes.",
-        "packet_hex": _hex_quoted(packet_hex),
-        "header_type": 1,
-        "expected_hashable_hex": _hex_quoted(hp.hex()),
-        "expected_sha256_hex": _hex_quoted(sha256_hex(hp)),
-    })
+    vectors.append(
+        {
+            "name": "HEADER_1_minimal",
+            "description": "Minimal HEADER_1: flags=0, hops=0, dest_hash=16 zeros, context=0. Total 19 bytes.",
+            "packet_hex": _hex_quoted(packet_hex),
+            "header_type": 1,
+            "expected_hashable_hex": _hex_quoted(hp.hex()),
+            "expected_sha256_hex": _hex_quoted(sha256_hex(hp)),
+        }
+    )
 
     # HEADER_2 minimal: 38 bytes (35 header + 3 payload)
     packet_hex = "40" + "00" * 37
     packet = bytes.fromhex(packet_hex)
     hp = hashable_part(packet, header_type=2)
-    vectors.append({
-        "name": "HEADER_2_minimal",
-        "description": "Minimal HEADER_2: flags=0x40, hops=0, transport_id=16 zeros, dest_hash=16 zeros, context=0; plus 3 bytes payload.",
-        "packet_hex": _hex_quoted(packet_hex),
-        "header_type": 2,
-        "expected_hashable_hex": _hex_quoted(hp.hex()),
-        "expected_sha256_hex": _hex_quoted(sha256_hex(hp)),
-    })
+    vectors.append(
+        {
+            "name": "HEADER_2_minimal",
+            "description": "Minimal HEADER_2: flags=0x40, hops=0, transport_id=16 zeros, dest_hash=16 zeros, context=0; plus 3 bytes payload.",
+            "packet_hex": _hex_quoted(packet_hex),
+            "header_type": 2,
+            "expected_hashable_hex": _hex_quoted(hp.hex()),
+            "expected_sha256_hex": _hex_quoted(sha256_hex(hp)),
+        }
+    )
 
     # HEADER_1 with upper bits set (IFAC 0x80, header-type 0x40, context 0x20) — low nibble mask 0x0F
     packet_hex = "e0" + "00" * 18  # flags=0xE0, rest zeros
     packet = bytes.fromhex(packet_hex)
     hp = hashable_part(packet, header_type=1)
-    vectors.append({
-        "name": "HEADER_1_flags_upper_bits",
-        "description": "HEADER_1 flags=0xE0 (IFAC|header-type|context); hashable byte0 masked to 0x00.",
-        "packet_hex": _hex_quoted(packet_hex),
-        "header_type": 1,
-        "expected_hashable_hex": _hex_quoted(hp.hex()),
-        "expected_sha256_hex": _hex_quoted(sha256_hex(hp)),
-    })
+    vectors.append(
+        {
+            "name": "HEADER_1_flags_upper_bits",
+            "description": "HEADER_1 flags=0xE0 (IFAC|header-type|context); hashable byte0 masked to 0x00.",
+            "packet_hex": _hex_quoted(packet_hex),
+            "header_type": 1,
+            "expected_hashable_hex": _hex_quoted(hp.hex()),
+            "expected_sha256_hex": _hex_quoted(sha256_hex(hp)),
+        }
+    )
 
     # HEADER_2 with upper bits, zero payload (35 bytes)
     packet_hex = "40" + "00" * 34
     packet = bytes.fromhex(packet_hex)
     hp = hashable_part(packet, header_type=2)
-    vectors.append({
-        "name": "HEADER_2_zero_payload",
-        "description": "HEADER_2 minimal header 35 bytes, no payload.",
-        "packet_hex": _hex_quoted(packet_hex),
-        "header_type": 2,
-        "expected_hashable_hex": _hex_quoted(hp.hex()),
-        "expected_sha256_hex": _hex_quoted(sha256_hex(hp)),
-    })
+    vectors.append(
+        {
+            "name": "HEADER_2_zero_payload",
+            "description": "HEADER_2 minimal header 35 bytes, no payload.",
+            "packet_hex": _hex_quoted(packet_hex),
+            "header_type": 2,
+            "expected_hashable_hex": _hex_quoted(hp.hex()),
+            "expected_sha256_hex": _hex_quoted(sha256_hex(hp)),
+        }
+    )
 
     return {"vectors": vectors}
 
@@ -273,40 +282,48 @@ def gen_signalling_vectors(ssot: dict[str, Any]) -> dict[str, Any]:
         for mode in mode_values:
             name_safe = f"encode_mtu{mtu}_mode{mode}"
             raw = encode_signalling_bytes(mtu, mode, mtu_mask)
-            vectors.append({
-                "name": name_safe,
-                "mtu": mtu,
-                "mode": mode,
-                "expected_bytes_hex": _hex_quoted(raw.hex()),
-            })
+            vectors.append(
+                {
+                    "name": name_safe,
+                    "mtu": mtu,
+                    "mode": mode,
+                    "expected_bytes_hex": _hex_quoted(raw.hex()),
+                }
+            )
     for mtu in mtu_values:
         for mode in mode_values:
             raw = encode_signalling_bytes(mtu, mode, mtu_mask)
             name_decode = f"decode_mtu{mtu}_mode{mode}"
-            vectors.append({
-                "name": name_decode,
-                "bytes_hex": _hex_quoted(raw.hex()),
-                "expected_mtu": mtu,
-                "expected_mode": mode,
-            })
+            vectors.append(
+                {
+                    "name": name_decode,
+                    "bytes_hex": _hex_quoted(raw.hex()),
+                    "expected_mtu": mtu,
+                    "expected_mode": mode,
+                }
+            )
 
     # Overflow: MTU beyond 21-bit masked to 0x1FFFFF
     overflow_mtu = 0x200000
     raw_overflow = encode_signalling_bytes(overflow_mtu, 0, mtu_mask)
     mtu_decoded, mode_decoded = decode_signalling_bytes(raw_overflow, mtu_mask)
-    vectors.append({
-        "name": "encode_mtu_overflow_21bit",
-        "description": "MTU 0x200000 (22nd bit set) masked to 21 bits; encodes as 0.",
-        "mtu": overflow_mtu,
-        "mode": 0,
-        "expected_bytes_hex": _hex_quoted(raw_overflow.hex()),
-    })
-    vectors.append({
-        "name": "decode_mtu_overflow_21bit",
-        "bytes_hex": _hex_quoted(raw_overflow.hex()),
-        "expected_mtu": mtu_decoded,
-        "expected_mode": mode_decoded,
-    })
+    vectors.append(
+        {
+            "name": "encode_mtu_overflow_21bit",
+            "description": "MTU 0x200000 (22nd bit set) masked to 21 bits; encodes as 0.",
+            "mtu": overflow_mtu,
+            "mode": 0,
+            "expected_bytes_hex": _hex_quoted(raw_overflow.hex()),
+        }
+    )
+    vectors.append(
+        {
+            "name": "decode_mtu_overflow_21bit",
+            "bytes_hex": _hex_quoted(raw_overflow.hex()),
+            "expected_mtu": mtu_decoded,
+            "expected_mode": mode_decoded,
+        }
+    )
 
     return {
         "meta": {
@@ -329,13 +346,15 @@ def gen_link_id_vectors(ssot: dict[str, Any]) -> dict[str, Any]:
     link_id_hex = truncated_hash_16_bytes(base_64).hex()
     data_len_64 = len(base_64)
     assert data_len_64 == 64
-    vectors.append({
-        "name": "linkrequest_without_signalling",
-        "description": "LINKREQUEST: hashable part 64 bytes; data_len=64, no strip.",
-        "hashable_part_before_strip_hex": _hex_quoted(base_64.hex()),
-        "data_len": data_len_64,
-        "expected_link_id_hex": _hex_quoted(link_id_hex),
-    })
+    vectors.append(
+        {
+            "name": "linkrequest_without_signalling",
+            "description": "LINKREQUEST: hashable part 64 bytes; data_len=64, no strip.",
+            "hashable_part_before_strip_hex": _hex_quoted(base_64.hex()),
+            "data_len": data_len_64,
+            "expected_link_id_hex": _hex_quoted(link_id_hex),
+        }
+    )
     # Case 2: same 64-byte prefix + 3 signalling bytes, data_len=67 → strip last 3
     base_67 = base_64 + bytes.fromhex("aabbcc")
     data_len_67 = len(base_67)
@@ -344,25 +363,31 @@ def gen_link_id_vectors(ssot: dict[str, Any]) -> dict[str, Any]:
     link_id_stripped_hex = truncated_hash_16_bytes(stripped).hex()
     assert link_id_stripped_hex == link_id_hex
     assert data_len_67 == len(base_67), "data_len must equal len(hashable_part_before_strip)"
-    vectors.append({
-        "name": "linkrequest_with_signalling",
-        "description": "Same 64-byte hashable prefix + 3 signalling bytes; data_len=67, strip last 3 → same link_id.",
-        "hashable_part_before_strip_hex": _hex_quoted(base_67.hex()),
-        "data_len": data_len_67,
-        "expected_link_id_hex": _hex_quoted(link_id_stripped_hex),
-    })
+    vectors.append(
+        {
+            "name": "linkrequest_with_signalling",
+            "description": "Same 64-byte hashable prefix + 3 signalling bytes; data_len=67, strip last 3 → same link_id.",
+            "hashable_part_before_strip_hex": _hex_quoted(base_67.hex()),
+            "data_len": data_len_67,
+            "expected_link_id_hex": _hex_quoted(link_id_stripped_hex),
+        }
+    )
     # Stability: same expected_link_id_hex for both
-    vectors.append({
-        "name": "link_id_stability",
-        "description": "Stability: identical hashable part after strip → identical link_id.",
-        "hashable_part_before_strip_hex": _hex_quoted(base_64.hex()),
-        "data_len": data_len_64,
-        "expected_link_id_hex": _hex_quoted(link_id_hex),
-    })
+    vectors.append(
+        {
+            "name": "link_id_stability",
+            "description": "Stability: identical hashable part after strip → identical link_id.",
+            "hashable_part_before_strip_hex": _hex_quoted(base_64.hex()),
+            "data_len": data_len_64,
+            "expected_link_id_hex": _hex_quoted(link_id_hex),
+        }
+    )
     return {"vectors": vectors}
 
 
-IFAC_KEY_BYTES = 32  # Vectors use 32-byte ifac_key (mask derivation salt). Spec IFAC key derivation may use 64 for Identity.
+IFAC_KEY_BYTES = (
+    32  # Vectors use 32-byte ifac_key (mask derivation salt). Spec IFAC key derivation may use 64 for Identity.
+)
 
 
 def gen_ifac_masking_vectors(ssot: dict[str, Any]) -> dict[str, Any]:
@@ -378,15 +403,17 @@ def gen_ifac_masking_vectors(ssot: dict[str, Any]) -> dict[str, Any]:
     assert len(ifac) == 1
     on_wire = ifac_mask_transform(canonical, ifac, ifac_key)
     recovered = ifac_unmask_transform(on_wire, ifac_size=len(ifac), ifac_key=ifac_key)
-    vectors.append({
-        "name": "canonical19_ifac1_key0",
-        "description": "Canonical 19 bytes; IFAC=0x00; ifac_key=32 zero bytes; mask/unmask round-trip.",
-        "canonical_packet_hex": _hex_quoted(canonical.hex()),
-        "ifac_bytes_hex": _hex_quoted(ifac.hex()),
-        "ifac_key_hex": _hex_quoted(ifac_key.hex()),
-        "expected_on_wire_hex": _hex_quoted(on_wire.hex()),
-        "expected_recovered_canonical_hex": _hex_quoted(recovered.hex()),
-    })
+    vectors.append(
+        {
+            "name": "canonical19_ifac1_key0",
+            "description": "Canonical 19 bytes; IFAC=0x00; ifac_key=32 zero bytes; mask/unmask round-trip.",
+            "canonical_packet_hex": _hex_quoted(canonical.hex()),
+            "ifac_bytes_hex": _hex_quoted(ifac.hex()),
+            "ifac_key_hex": _hex_quoted(ifac_key.hex()),
+            "expected_on_wire_hex": _hex_quoted(on_wire.hex()),
+            "expected_recovered_canonical_hex": _hex_quoted(recovered.hex()),
+        }
+    )
 
     # Case 2: non-zero canonical, ifac 0xa5, ifac_key 0x11*32
     canonical2 = bytes.fromhex("40" + "01" * 18)
@@ -396,15 +423,17 @@ def gen_ifac_masking_vectors(ssot: dict[str, Any]) -> dict[str, Any]:
     assert len(ifac2) == 1
     on_wire2 = ifac_mask_transform(canonical2, ifac2, ifac_key2)
     recovered2 = ifac_unmask_transform(on_wire2, ifac_size=len(ifac2), ifac_key=ifac_key2)
-    vectors.append({
-        "name": "canonical19_ifac1_key11",
-        "description": "Non-zero canonical; IFAC=0xa5; ifac_key=0x11*32; transform determinism + round-trip.",
-        "canonical_packet_hex": _hex_quoted(canonical2.hex()),
-        "ifac_bytes_hex": _hex_quoted(ifac2.hex()),
-        "ifac_key_hex": _hex_quoted(ifac_key2.hex()),
-        "expected_on_wire_hex": _hex_quoted(on_wire2.hex()),
-        "expected_recovered_canonical_hex": _hex_quoted(recovered2.hex()),
-    })
+    vectors.append(
+        {
+            "name": "canonical19_ifac1_key11",
+            "description": "Non-zero canonical; IFAC=0xa5; ifac_key=0x11*32; transform determinism + round-trip.",
+            "canonical_packet_hex": _hex_quoted(canonical2.hex()),
+            "ifac_bytes_hex": _hex_quoted(ifac2.hex()),
+            "ifac_key_hex": _hex_quoted(ifac_key2.hex()),
+            "expected_on_wire_hex": _hex_quoted(on_wire2.hex()),
+            "expected_recovered_canonical_hex": _hex_quoted(recovered2.hex()),
+        }
+    )
 
     # Case 3: ifac_size 8 bytes, non-zero mask
     canonical3 = bytes.fromhex("00" * 25)
@@ -414,15 +443,17 @@ def gen_ifac_masking_vectors(ssot: dict[str, Any]) -> dict[str, Any]:
     assert len(ifac3) == 8
     on_wire3 = ifac_mask_transform(canonical3, ifac3, ifac_key3)
     recovered3 = ifac_unmask_transform(on_wire3, ifac_size=len(ifac3), ifac_key=ifac_key3)
-    vectors.append({
-        "name": "canonical25_ifac8_keyaa",
-        "description": "Canonical 25 bytes; IFAC 8 bytes; non-zero ifac_key; round-trip.",
-        "canonical_packet_hex": _hex_quoted(canonical3.hex()),
-        "ifac_bytes_hex": _hex_quoted(ifac3.hex()),
-        "ifac_key_hex": _hex_quoted(ifac_key3.hex()),
-        "expected_on_wire_hex": _hex_quoted(on_wire3.hex()),
-        "expected_recovered_canonical_hex": _hex_quoted(recovered3.hex()),
-    })
+    vectors.append(
+        {
+            "name": "canonical25_ifac8_keyaa",
+            "description": "Canonical 25 bytes; IFAC 8 bytes; non-zero ifac_key; round-trip.",
+            "canonical_packet_hex": _hex_quoted(canonical3.hex()),
+            "ifac_bytes_hex": _hex_quoted(ifac3.hex()),
+            "ifac_key_hex": _hex_quoted(ifac_key3.hex()),
+            "expected_on_wire_hex": _hex_quoted(on_wire3.hex()),
+            "expected_recovered_canonical_hex": _hex_quoted(recovered3.hex()),
+        }
+    )
 
     # Case 4: ifac_size 16 bytes
     canonical4 = bytes.fromhex("40" + "00" * 34)
@@ -432,15 +463,17 @@ def gen_ifac_masking_vectors(ssot: dict[str, Any]) -> dict[str, Any]:
     assert len(ifac4) == 16
     on_wire4 = ifac_mask_transform(canonical4, ifac4, ifac_key4)
     recovered4 = ifac_unmask_transform(on_wire4, ifac_size=len(ifac4), ifac_key=ifac_key4)
-    vectors.append({
-        "name": "canonical35_ifac16",
-        "description": "HEADER_2-style 35 bytes; IFAC 16 bytes; round-trip.",
-        "canonical_packet_hex": _hex_quoted(canonical4.hex()),
-        "ifac_bytes_hex": _hex_quoted(ifac4.hex()),
-        "ifac_key_hex": _hex_quoted(ifac_key4.hex()),
-        "expected_on_wire_hex": _hex_quoted(on_wire4.hex()),
-        "expected_recovered_canonical_hex": _hex_quoted(recovered4.hex()),
-    })
+    vectors.append(
+        {
+            "name": "canonical35_ifac16",
+            "description": "HEADER_2-style 35 bytes; IFAC 16 bytes; round-trip.",
+            "canonical_packet_hex": _hex_quoted(canonical4.hex()),
+            "ifac_bytes_hex": _hex_quoted(ifac4.hex()),
+            "ifac_key_hex": _hex_quoted(ifac_key4.hex()),
+            "expected_on_wire_hex": _hex_quoted(on_wire4.hex()),
+            "expected_recovered_canonical_hex": _hex_quoted(recovered4.hex()),
+        }
+    )
 
     return {
         "meta": {

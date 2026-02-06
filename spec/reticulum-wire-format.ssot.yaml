@@ -20,1299 +20,1299 @@ spec_meta:
 manifest:
   repo_revision: "286a78ef8c58ca4503af2b0211b3a2d7e385467c"
 atoms:
-  # --- Packet header layouts ---
-- id: RNS.PKT.LAYOUT.HEADER_1
-  kind: layout
-  normative: MUST
-  statement: "HEADER_1 packets have byte 0 as flags, byte 1 as hops, bytes 2 through
-    17 as destination hash (16 bytes), and byte 18 as context; total minimum header
-    19 bytes."
-  layout:
-    fields:
-    - name: flags
-      offset: 0
-      length: 1
-    - name: hops
-      offset: 1
-      length: 1
-    - name: destination_hash
-      offset: 2
-      length: 16
-    - name: context
-      offset: 18
-      length: 1
-  references:
-  - file: RNS/Packet.py
-    symbol: unpack
-    lines: {start: 241, end: 272}
-    role: definition
-  - file: RNS/Packet.py
-    symbol: pack
-    lines: {start: 176, end: 235}
-    role: implementation
-- id: RNS.PKT.LAYOUT.HEADER_2
-  kind: layout
-  normative: MUST
-  statement: "HEADER_2 packets have byte 0 as flags, byte 1 as hops, bytes 2 through
-    17 as transport_id, bytes 18 through 33 as destination hash, and byte 34 as context;
-    total minimum header 35 bytes."
-  layout:
-    fields:
-    - name: flags
-      offset: 0
-      length: 1
-    - name: hops
-      offset: 1
-      length: 1
-    - name: transport_id
-      offset: 2
-      length: 16
-    - name: destination_hash
-      offset: 18
-      length: 16
-    - name: context
-      offset: 34
-      length: 1
-  references:
-  - file: RNS/Packet.py
-    symbol: unpack
-    lines: {start: 241, end: 272}
-    role: definition
-- id: RNS.PKT.CONST.HEADER_MINSIZE
-  kind: constant
-  normative: MUST
-  statement: "The minimum packet header size is 19 bytes (flags, hops, destination
-    hash, context)."
-  value:
-    number: 19
-    unit: "bytes"
-  references:
-  - file: RNS/Reticulum.py
-    symbol: HEADER_MINSIZE
-    lines: {start: 147, end: 154}
-    role: definition
-- id: RNS.PKT.CONST.HEADER_MAXSIZE
-  kind: constant
-  normative: MUST
-  statement: "The maximum packet header size is 35 bytes (flags, hops, transport_id,
-    destination hash, context)."
-  value:
-    number: 35
-    unit: "bytes"
-  references:
-  - file: RNS/Reticulum.py
-    symbol: HEADER_MAXSIZE
-    lines: {start: 147, end: 154}
-    role: definition
-- id: RNS.PKT.ALG.FLAGS_PACK_UNPACK
-  kind: algorithm
-  normative: MUST
-  statement: "The flags byte is packed and unpacked as follows: bit 7 IFAC-present
-    (0x80, see RNS.IFAC.CONST.IFAC_FLAG_BIT); bit 6 header type (0=HEADER_1, 1=HEADER_2);
-    bit 5 context flag; bit 4 transport type; bits 3-2 destination type; bits 1-0
-    packet type. When packing from packet fields, the IFAC bit is not set by the packet
-    layer; transport sets bit 7 on the wire when IFAC is present."
-  algorithm:
-    steps:
-    - "Header type is (flags & 0b01000000) >> 6 (bit 6 only; bit 7 is IFAC)."
-    - "Context flag is (flags & 0b00100000) >> 5."
-    - "Transport type is (flags & 0b00010000) >> 4."
-    - "Destination type is (flags & 0b00001100) >> 2."
-    - "Packet type is (flags & 0b00000011)."
-    - "When packing canonical flags (without IFAC), flags = (header_type << 6) | (context_flag
-      << 5) | (transport_type << 4) | (destination_type << 2) | packet_type. Set bit
-      7 only when emitting IFAC-protected packets on the wire."
-  references:
-  - file: RNS/Packet.py
-    symbol: get_packed_flags
-    lines: {start: 168, end: 174}
-    role: implementation
-  - file: RNS/Packet.py
-    symbol: unpack
-    lines: {start: 241, end: 252}
-    role: implementation
-- id: RNS.PKT.ALG.HASHABLE_PART
-  kind: algorithm
-  normative: MUST
-  statement: "The hashable part is used for packet and link hashes. Byte 0 (flags)
-    is masked to 0x0F; byte 1 (hops) is excluded. For HEADER_1 the remainder is raw[2:];
-    for HEADER_2 the remainder is raw[18:] (skipping transport_id bytes 2..17)."
-  algorithm:
-    steps:
-    - "Let b0 = raw[0] & 0x0F (canonical flags low nibble; excludes header-type and
-      IFAC bits)."
-    - "If header_type is HEADER_2, hashable_part = b0 || raw[18:] (bytes [2..18) are
-      transport_id, excluded)."
-    - "Else (HEADER_1), hashable_part = b0 || raw[2:] (bytes [0,1] are flags and hops;
-      hops excluded)."
-    - "Return hashable_part."
-  references:
-  - file: RNS/Packet.py
-    symbol: get_hashable_part
-    lines: {start: 353, end: 359}
-    role: definition
-- id: RNS.PKT.ALG.TRUNCATED_HASH
-  kind: algorithm
-  normative: MUST
-  statement: "The truncated hash is the first 16 bytes of the SHA-256 hash of the
-    input."
-  algorithm:
-    steps:
-    - "Compute full_hash = SHA-256(data)."
-    - "Return full_hash[0:(TRUNCATED_HASHLENGTH//8)]; TRUNCATED_HASHLENGTH is 128
-      bits."
-  references:
-  - file: RNS/Identity.py
-    symbol: truncated_hash
-    lines: {start: 247, end: 256}
-    role: definition
-  - file: RNS/Identity.py
-    symbol: full_hash
-    lines: {start: 238, end: 246}
-    role: derivation
-- id: RNS.LNK.ALG.LINK_ID_FROM_LINKREQUEST
-  kind: algorithm
-  normative: MUST
-  statement: "Link ID is the truncated hash (first 16 bytes of SHA-256) of the hashable
-    part with signalling bytes stripped when payload length exceeds 64 bytes."
-  algorithm:
-    steps:
-    - "Obtain hashable_part = packet.get_hashable_part()."
-    - "If len(packet.data) > ECPUBSIZE (64), set hashable_part = hashable_part[:-diff]
-      where diff = len(packet.data) - ECPUBSIZE."
-    - "Return RNS.Identity.truncated_hash(hashable_part)."
-  references:
-  - file: RNS/Link.py
-    symbol: link_id_from_lr_packet
-    lines: {start: 340, end: 346}
-    role: definition
-- id: RNS.LNK.CONST.LINK_MTU_SIZE
-  kind: constant
-  normative: MUST
-  statement: "Signalling bytes are exactly 3 bytes on the wire."
-  value:
-    number: 3
-    unit: "bytes"
-  references:
-  - file: RNS/Link.py
-    symbol: LINK_MTU_SIZE
-    lines: {start: 78, end: 81}
-    role: definition
-- id: RNS.LNK.CONST.MTU_BYTEMASK
-  kind: constant
-  normative: MUST
-  statement: "The MTU value in signalling bytes is encoded in 21 bits; the byte mask
-    for the MTU field is 0x1FFFFF."
-  value:
-    number: 2097151
-    unit: "byte mask"
-    format: "0x1FFFFF"
-    max_reasonable: 2097151
-  references:
-  - file: RNS/Link.py
-    symbol: MTU_BYTEMASK
-    lines: {start: 144, end: 145}
-    role: definition
-- id: RNS.LNK.CONST.MODE_BYTEMASK
-  kind: constant
-  normative: MUST
-  statement: "The mode value in signalling bytes occupies the top 3 bits of the first
-    byte; the byte mask is 0xE0."
-  value:
-    number: 224
-    unit: "byte mask"
-    format: "0xE0"
-  references:
-  - file: RNS/Link.py
-    symbol: MODE_BYTEMASK
-    lines: {start: 144, end: 145}
-    role: definition
-- id: RNS.LNK.ALG.SIGNALLING_ENCODE
-  kind: algorithm
-  normative: MUST
-  statement: "Signalling bytes encode MTU (21 bits) and mode (3 bits) as three big-endian
-    bytes; byte0 = (mode<<5)|(MTU>>16), byte1 = (MTU>>8)&0xFF, byte2 = MTU&0xFF."
-  algorithm:
-    steps:
-    - "Pack signalling_value = (mtu & MTU_BYTEMASK) + (((mode<<5) & MODE_BYTEMASK)<<16)."
-    - "Pack as big-endian 32-bit unsigned integer and take bytes [1:4] (drop high
-      byte)."
-    - "Return the 3-byte sequence."
-  references:
-  - file: RNS/Link.py
-    symbol: signalling_bytes
-    lines: {start: 146, end: 150}
-    role: definition
-- id: RNS.LNK.ALG.SIGNALLING_DECODE
-  kind: algorithm
-  normative: MUST
-  statement: "Signalling bytes decode as mode = (byte0>>5)&0x07 and MTU = ((byte0&0x1F)<<16)|(byte1<<8)|byte2."
-  algorithm:
-    steps:
-    - "Mode is (first_byte & MODE_BYTEMASK) >> 5."
-    - "MTU is (byte0<<16 + byte1<<8 + byte2) & MTU_BYTEMASK."
-  references:
-  - file: RNS/Link.py
-    symbol: mtu_from_lr_packet
-    lines: {start: 152, end: 156}
-    role: implementation
-  - file: RNS/Link.py
-    symbol: mode_from_lr_packet
-    lines: {start: 172, end: 176}
-    role: implementation
-- id: RNS.IFAC.CONST.IFAC_FLAG_BIT
-  kind: constant
-  normative: MUST
-  statement: "The IFAC-present flag is bit 7 of the flags byte; value 0x80 when IFAC
-    is present."
-  value:
-    number: 128
-    unit: "byte mask"
-    format: "0x80"
-  references:
-  - file: RNS/Transport.py
-    symbol: new_header
-    lines: {start: 907, end: 912}
-    role: implementation
-- id: RNS.IFAC.CONST.IFAC_SALT
-  kind: constant
-  normative: MUST
-  statement: "The IFAC key derivation uses a 32-byte salt with hex value adf54d882c9a9b80771eb4995d702d4a3e733391b2a0f53f416d9f907e55cff8."
-  value:
-    number: "adf54d882c9a9b80771eb4995d702d4a3e733391b2a0f53f416d9f907e55cff8"
-    unit: "bytes"
-    format: "hex"
-  references:
-  - file: RNS/Reticulum.py
-    symbol: IFAC_SALT
-    lines: {start: 147, end: 154}
-    role: definition
-- id: RNS.IFAC.ALG.OUTBOUND_INSERT_AND_MASK
-  kind: algorithm
-  normative: MUST
-  statement: "Outbound IFAC: sign raw packet, take last ifac_size bytes as IFAC, insert
-    after byte 1, set bit 7 of byte 0, then mask with HKDF-derived mask. Mask bytes
-    [0], [1], and [2+ifac_size .. end); do not mask bytes [2 .. 2+ifac_size) (the
-    IFAC bytes)."
-  algorithm:
-    steps:
-    - "IFAC = sign(raw)[-ifac_size:]."
-    - "new_header = (raw[0]|0x80, raw[1]); new_raw = new_header + ifac + raw[2:] (layout:
-      [0]=flags|0x80, [1]=hops, [2..2+ifac_size)=IFAC, [2+ifac_size..end)=payload)."
-    - "mask = HKDF(length=len(new_raw), derive_from=ifac, salt=ifac_key, context=None)."
-    - "Mask bytes at indices [0], [1], and [2+ifac_size .. len(new_raw)); do not mask
-      [2 .. 2+ifac_size). Byte 0 after XOR: (new_raw[0]^mask[0])|0x80; all other masked
-      bytes: new_raw[i]^mask[i]."
-  references:
-  - file: RNS/Transport.py
-    symbol: transmit
-    lines: {start: 894, end: 928}
-    role: implementation
-- id: RNS.IFAC.ALG.INBOUND_UNMASK_AND_VERIFY
-  kind: algorithm
-  normative: MUST
-  statement: "Inbound packets with IFAC flag set: extract IFAC from raw[2..2+ifac_size),
-    derive mask, unmask bytes [0], [1], and [2+ifac_size .. end); leave [2 .. 2+ifac_size)
-    unchanged. Reassemble canonical raw and verify IFAC equals sign(canonical_raw)[-ifac_size:]."
-  algorithm:
-    steps:
-    - "If raw[0]&0x80 != 0x80 or len(raw) <= 2+ifac_size, drop packet."
-    - "ifac = raw[2:2+ifac_size]; mask = HKDF(length=len(raw), derive_from=ifac, salt=ifac_key,
-      context=None)."
-    - "Unmask bytes at indices [0], [1], and [2+ifac_size .. len(raw)); do not unmask
-      [2 .. 2+ifac_size)."
-    - "canonical_raw = (raw[0]&0x7f, raw[1]) + raw[2+ifac_size:] (IFAC bit cleared,
-      IFAC bytes removed)."
-    - "expected_ifac = sign(canonical_raw)[-ifac_size:]; accept iff ifac == expected_ifac."
-  references:
-  - file: RNS/Transport.py
-    symbol: inbound
-    lines: {start: 1241, end: 1295}
-    role: implementation
-- id: RNS.PKT.CONST.CTX_NONE
-  kind: constant
-  normative: NOTE
-  statement: "Context byte value 0 denotes generic data packet."
-  tags: [context]
-  value:
-    number: 0
-    unit: "byte"
-  references:
-  - file: RNS/Packet.py
-    symbol: NONE
-    lines: {start: 71, end: 92}
-    role: definition
-- id: RNS.PKT.CONST.CTX_RESOURCE
-  kind: constant
-  normative: NOTE
-  statement: "Context byte value 1 denotes packet is part of a resource."
-  tags: [context]
-  value:
-    number: 1
-    unit: "byte"
-  references:
-  - file: RNS/Packet.py
-    symbol: RESOURCE
-    lines: {start: 71, end: 92}
-    role: definition
-- id: RNS.PKT.CONST.CTX_RESOURCE_ADV
-  kind: constant
-  normative: NOTE
-  statement: "Context byte value 2 denotes resource advertisement."
-  tags: [context]
-  value:
-    number: 2
-    unit: "byte"
-  references:
-  - file: RNS/Packet.py
-    symbol: RESOURCE_ADV
-    lines: {start: 71, end: 92}
-    role: definition
-- id: RNS.PKT.CONST.CTX_RESOURCE_REQ
-  kind: constant
-  normative: NOTE
-  statement: "Context byte value 3 denotes resource part request."
-  tags: [context]
-  value:
-    number: 3
-    unit: "byte"
-  references:
-  - file: RNS/Packet.py
-    symbol: RESOURCE_REQ
-    lines: {start: 71, end: 92}
-    role: definition
-- id: RNS.PKT.CONST.CTX_RESOURCE_HMU
-  kind: constant
-  normative: NOTE
-  statement: "Context byte value 4 denotes resource hashmap update."
-  tags: [context]
-  value:
-    number: 4
-    unit: "byte"
-  references:
-  - file: RNS/Packet.py
-    symbol: RESOURCE_HMU
-    lines: {start: 71, end: 92}
-    role: definition
-- id: RNS.PKT.CONST.CTX_RESOURCE_PRF
-  kind: constant
-  normative: NOTE
-  statement: "Context byte value 5 denotes resource proof."
-  tags: [context]
-  value:
-    number: 5
-    unit: "byte"
-  references:
-  - file: RNS/Packet.py
-    symbol: RESOURCE_PRF
-    lines: {start: 71, end: 92}
-    role: definition
-- id: RNS.PKT.CONST.CTX_RESOURCE_ICL
-  kind: constant
-  normative: NOTE
-  statement: "Context byte value 6 denotes resource initiator cancel."
-  tags: [context]
-  value:
-    number: 6
-    unit: "byte"
-  references:
-  - file: RNS/Packet.py
-    symbol: RESOURCE_ICL
-    lines: {start: 71, end: 92}
-    role: definition
-- id: RNS.PKT.CONST.CTX_RESOURCE_RCL
-  kind: constant
-  normative: NOTE
-  statement: "Context byte value 7 denotes resource receiver cancel."
-  tags: [context]
-  value:
-    number: 7
-    unit: "byte"
-  references:
-  - file: RNS/Packet.py
-    symbol: RESOURCE_RCL
-    lines: {start: 71, end: 92}
-    role: definition
-- id: RNS.PKT.CONST.CTX_CACHE_REQUEST
-  kind: constant
-  normative: NOTE
-  statement: "Context byte value 8 denotes cache request."
-  tags: [context]
-  value:
-    number: 8
-    unit: "byte"
-  references:
-  - file: RNS/Packet.py
-    symbol: CACHE_REQUEST
-    lines: {start: 71, end: 92}
-    role: definition
-- id: RNS.PKT.CONST.CTX_REQUEST
-  kind: constant
-  normative: NOTE
-  statement: "Context byte value 9 denotes request."
-  tags: [context]
-  value:
-    number: 9
-    unit: "byte"
-  references:
-  - file: RNS/Packet.py
-    symbol: REQUEST
-    lines: {start: 71, end: 92}
-    role: definition
-- id: RNS.PKT.CONST.CTX_RESPONSE
-  kind: constant
-  normative: NOTE
-  statement: "Context byte value 10 denotes response to a request."
-  tags: [context]
-  value:
-    number: 10
-    unit: "byte"
-  references:
-  - file: RNS/Packet.py
-    symbol: RESPONSE
-    lines: {start: 71, end: 92}
-    role: definition
-- id: RNS.PKT.CONST.CTX_PATH_RESPONSE
-  kind: constant
-  normative: NOTE
-  statement: "Context byte value 11 denotes path response."
-  tags: [context]
-  value:
-    number: 11
-    unit: "byte"
-  references:
-  - file: RNS/Packet.py
-    symbol: PATH_RESPONSE
-    lines: {start: 71, end: 92}
-    role: definition
-- id: RNS.PKT.CONST.CTX_COMMAND
-  kind: constant
-  normative: NOTE
-  statement: "Context byte value 12 denotes command."
-  tags: [context]
-  value:
-    number: 12
-    unit: "byte"
-  references:
-  - file: RNS/Packet.py
-    symbol: COMMAND
-    lines: {start: 71, end: 92}
-    role: definition
-- id: RNS.PKT.CONST.CTX_COMMAND_STATUS
-  kind: constant
-  normative: NOTE
-  statement: "Context byte value 13 denotes command status."
-  tags: [context]
-  value:
-    number: 13
-    unit: "byte"
-  references:
-  - file: RNS/Packet.py
-    symbol: COMMAND_STATUS
-    lines: {start: 71, end: 92}
-    role: definition
-- id: RNS.PKT.CONST.CTX_CHANNEL
-  kind: constant
-  normative: NOTE
-  statement: "Context byte value 14 denotes link channel data."
-  tags: [context]
-  value:
-    number: 14
-    unit: "byte"
-  references:
-  - file: RNS/Packet.py
-    symbol: CHANNEL
-    lines: {start: 71, end: 92}
-    role: definition
-- id: RNS.PKT.CONST.CTX_KEEPALIVE
-  kind: constant
-  normative: NOTE
-  statement: "Context byte value 250 denotes keepalive packet."
-  tags: [context]
-  value:
-    number: 250
-    unit: "byte"
-  references:
-  - file: RNS/Packet.py
-    symbol: KEEPALIVE
-    lines: {start: 71, end: 92}
-    role: definition
-- id: RNS.PKT.CONST.CTX_LINKIDENTIFY
-  kind: constant
-  normative: NOTE
-  statement: "Context byte value 251 denotes link peer identification proof."
-  tags: [context]
-  value:
-    number: 251
-    unit: "byte"
-  references:
-  - file: RNS/Packet.py
-    symbol: LINKIDENTIFY
-    lines: {start: 71, end: 92}
-    role: definition
-- id: RNS.PKT.CONST.CTX_LINKCLOSE
-  kind: constant
-  normative: NOTE
-  statement: "Context byte value 252 denotes link close message."
-  tags: [context]
-  value:
-    number: 252
-    unit: "byte"
-  references:
-  - file: RNS/Packet.py
-    symbol: LINKCLOSE
-    lines: {start: 71, end: 92}
-    role: definition
-- id: RNS.PKT.CONST.CTX_LINKPROOF
-  kind: constant
-  normative: NOTE
-  statement: "Context byte value 253 denotes link packet proof."
-  tags: [context]
-  value:
-    number: 253
-    unit: "byte"
-  references:
-  - file: RNS/Packet.py
-    symbol: LINKPROOF
-    lines: {start: 71, end: 92}
-    role: definition
-- id: RNS.PKT.CONST.CTX_LRRTT
-  kind: constant
-  normative: NOTE
-  statement: "Context byte value 254 denotes link request round-trip time measurement."
-  tags: [context]
-  value:
-    number: 254
-    unit: "byte"
-  references:
-  - file: RNS/Packet.py
-    symbol: LRRTT
-    lines: {start: 71, end: 92}
-    role: definition
-- id: RNS.PKT.CONST.CTX_LRPROOF
-  kind: constant
-  normative: NOTE
-  statement: "Context byte value 255 denotes link request proof."
-  tags: [context]
-  value:
-    number: 255
-    unit: "byte"
-  references:
-  - file: RNS/Packet.py
-    symbol: LRPROOF
-    lines: {start: 71, end: 92}
-    role: definition
-- id: RNS.TRN.CONST.MTU_DEFAULT
-  kind: constant
-  normative: MUST
-  statement: "Default physical-layer MTU is 500 bytes; the wire packet length MUST
-    NOT exceed the applicable MTU (interface or link)."
-  value:
-    number: 500
-    unit: "bytes"
-  references:
-  - file: RNS/Reticulum.py
-    symbol: MTU
-    lines: {start: 89, end: 95}
-    role: definition
-- id: RNS.TRN.CONST.DST_LEN
-  kind: constant
-  normative: MUST
-  statement: "Destination hash, transport id, and link_id are 16 bytes (TRUNCATED_HASHLENGTH//8)."
-  value:
-    number: 16
-    unit: "bytes"
-  references:
-  - file: RNS/Reticulum.py
-    symbol: TRUNCATED_HASHLENGTH
-    lines: {start: 147, end: 154}
-    role: definition
-- id: RNS.TRN.CONST.IFAC_MIN_SIZE
-  kind: constant
-  normative: MUST
-  statement: "Minimum IFAC payload length is 1 byte; interface.ifac_size defines actual
-    length."
-  value:
-    number: 1
-    unit: "bytes"
-  references:
-  - file: RNS/Reticulum.py
-    symbol: IFAC_MIN_SIZE
-    lines: {start: 147, end: 154}
-    role: definition
-- id: RNS.TRN.CONST.MDU
-  kind: constant
-  normative: NOTE
-  statement: "MDU (maximum data unit) is MTU minus HEADER_MAXSIZE and IFAC_MIN_SIZE;
-    maximum plaintext in a single packet before encryption overhead."
-  value:
-    number: 464
-    unit: "bytes"
-  references:
-  - file: RNS/Reticulum.py
-    symbol: MDU
-    lines: {start: 147, end: 154}
-    role: definition
-- id: RNS.PKT.CONST.KEYSIZE_BYTES
-  kind: constant
-  normative: MUST
-  statement: "Identity public and private key format is 64 bytes (X25519 32 + Ed25519
-    32)."
-  value:
-    number: 64
-    unit: "bytes"
-  references:
-  - file: RNS/Identity.py
-    symbol: KEYSIZE
-    lines: {start: 59, end: 89}
-    role: definition
-- id: RNS.PKT.CONST.SIGLENGTH_BYTES
-  kind: constant
-  normative: MUST
-  statement: "Ed25519 signature length is 64 bytes."
-  value:
-    number: 64
-    unit: "bytes"
-  references:
-  - file: RNS/Identity.py
-    symbol: SIGLENGTH
-    lines: {start: 59, end: 89}
-    role: definition
-- id: RNS.PKT.CONST.HASHLENGTH_BYTES
-  kind: constant
-  normative: MUST
-  statement: "Full SHA-256 hash length is 32 bytes."
-  value:
-    number: 32
-    unit: "bytes"
-  references:
-  - file: RNS/Identity.py
-    symbol: HASHLENGTH
-    lines: {start: 59, end: 89}
-    role: definition
-- id: RNS.PKT.CONST.RATCHETSIZE_BYTES
-  kind: constant
-  normative: MUST
-  statement: "Ratchet public key is 32 bytes (RATCHETSIZE//8)."
-  value:
-    number: 32
-    unit: "bytes"
-  references:
-  - file: RNS/Identity.py
-    symbol: RATCHETSIZE
-    lines: {start: 59, end: 89}
-    role: definition
-- id: RNS.PKT.CONST.NAME_HASH_LENGTH_BYTES
-  kind: constant
-  normative: MUST
-  statement: "Name hash and announce random hash are 10 bytes (NAME_HASH_LENGTH//8)."
-  value:
-    number: 10
-    unit: "bytes"
-  references:
-  - file: RNS/Identity.py
-    symbol: NAME_HASH_LENGTH
-    lines: {start: 59, end: 89}
-    role: definition
-- id: RNS.PKT.CONST.TOKEN_OVERHEAD
-  kind: constant
-  normative: MUST
-  statement: "Token overhead is 48 bytes (IV 16 + HMAC 32)."
-  value:
-    number: 48
-    unit: "bytes"
-  references:
-  - file: RNS/Cryptography/Token.py
-    symbol: TOKEN_OVERHEAD
-    lines: {start: 48, end: 52}
-    role: definition
-- id: RNS.PKT.CONST.AES128_BLOCKSIZE
-  kind: constant
-  normative: MUST
-  statement: "AES block size is 16 bytes (used for padding and ciphertext alignment)."
-  value:
-    number: 16
-    unit: "bytes"
-  references:
-  - file: RNS/Identity.py
-    symbol: AES128_BLOCKSIZE
-    lines: {start: 59, end: 89}
-    role: definition
-- id: RNS.RES.CONST.MAPHASH_LEN
-  kind: constant
-  normative: MUST
-  statement: "Resource map hash (part hash) is 4 bytes; first 4 bytes of full_hash(part_data+random_hash)."
-  value:
-    number: 4
-    unit: "bytes"
-  references:
-  - file: RNS/Resource.py
-    symbol: MAPHASH_LEN
-    lines: {start: 100, end: 106}
-    role: definition
-- id: RNS.LNK.CONST.ECPUBSIZE
-  kind: constant
-  normative: MUST
-  statement: "Link request/response key material is 64 bytes (Initiator X25519 32
-    + Ed25519 32)."
-  value:
-    number: 64
-    unit: "bytes"
-  references:
-  - file: RNS/Link.py
-    symbol: ECPUBSIZE
-    lines: {start: 70, end: 80}
-    role: definition
-- id: RNS.PKT.ALG.DESTINATION_HASH_FROM_NAME
-  kind: algorithm
-  normative: MUST
-  statement: "Destination hash (16 bytes) is derived from human-readable name and
-    optional identity: expand_name (app_name + aspects, + identity.hexhash if present),
-    name_hash = SHA-256(expand_name(None, app_name, *aspects).encode())[:10], addr_hash_material
-    = name_hash [+ identity.hash if identity], destination_hash = SHA-256(addr_hash_material)[:16]."
-  algorithm:
-    steps:
-    - "Build full name string: app_name + '.' + aspect1 + '.' + ... ; if identity
-      supplied append '.' + identity.hexhash. No dots inside app_name or aspects."
-    - "name_hash = SHA-256(expand_name(None, app_name, *aspects).encode('utf-8'))[:NAME_HASH_LENGTH//8]
-      (10 bytes)."
-    - "addr_hash_material = name_hash; if identity is not None append identity.hash
-      (16 bytes) or identity bytes."
-    - "Return full_hash(addr_hash_material)[:TRUNCATED_HASHLENGTH//8] (16 bytes)."
-  references:
-  - file: RNS/Destination.py
-    symbol: hash
-    lines: {start: 96, end: 130}
-    role: definition
-- id: RNS.PKT.CONST.TRANSPORT_BROADCAST
-  kind: constant
-  normative: NOTE
-  statement: "Flags byte bit 4 value 0 denotes BROADCAST transport type on the wire."
-  value:
-    number: 0
-    unit: "byte"
-  references:
-  - file: RNS/Transport.py
-    symbol: BROADCAST
-    lines: {start: 49, end: 54}
-    role: definition
-- id: RNS.PKT.CONST.TRANSPORT_TRANSPORT
-  kind: constant
-  normative: NOTE
-  statement: "Flags byte bit 4 value 1 denotes TRANSPORT transport type on the wire."
-  value:
-    number: 1
-    unit: "byte"
-  references:
-  - file: RNS/Transport.py
-    symbol: TRANSPORT
-    lines: {start: 49, end: 54}
-    role: definition
-- id: RNS.TRN.BEHAV.HDLC_FRAMING
-  kind: behaviour
-  normative: MUST
-  statement: "HDLC framing (TCP, Serial, Pipe, Weave): packets delimited by FLAG 0x7E.
-    Escape 0x7E to 0x7D 0x5E, 0x7D to 0x7D 0x5D. Unescape then extract frame between
-    FLAG bytes."
-  references:
-  - file: RNS/Interfaces/TCPInterface.py
-    symbol: HDLC
-    lines: {start: 44, end: 53}
-    role: definition
-- id: RNS.TRN.BEHAV.KISS_FRAMING
-  kind: behaviour
-  normative: MUST
-  statement: "KISS framing (packet radio): packets delimited by FEND 0xC0; command
-    byte 0x00 (CMD_DATA) prepended before escaping. Escape 0xC0 to 0xDB 0xDC, 0xDB
-    to 0xDB 0xDD. Unescape then payload is data after command byte between FEND boundaries."
-  references:
-  - file: RNS/Interfaces/TCPInterface.py
-    symbol: KISS
-    lines: {start: 55, end: 66}
-    role: definition
-  - file: RNS/Interfaces/KISSInterface.py
-    symbol: KISS
-    lines: {start: 38, end: 57}
-    role: implementation
-- id: RNS.TRN.BEHAV.RAW_UDP
-  kind: behaviour
-  normative: NOTE
-  statement: "UDPInterface sends on-wire packet bytes raw inside UDP payload; one
-    datagram equals one packet (no HDLC or KISS)."
-  references:
-  - file: RNS/Interfaces/UDPInterface.py
-    symbol: UDPInterface
-    lines: {start: 40, end: 46}
-    role: definition
-- id: RNS.PKT.RULE.WELLFORMED_PACKET
-  kind: validation_rule
-  normative: MUST
-  statement: "After IFAC removal (if present), packet MUST be parseable as HEADER_1
-    or HEADER_2 and length MUST be at least HEADER_MINSIZE or HEADER_MAXSIZE respectively.
-    Malformed packets MUST be discarded."
-  references:
-  - file: RNS/Transport.py
-    symbol: inbound
-    lines: {start: 1241, end: 1250}
-    role: implementation
-- id: RNS.PKT.RULE.UNKNOWN_CONTEXT_OPAQUE
-  kind: validation_rule
-  normative: MUST
-  statement: "Unknown context or packet type values MAY appear on the wire; implementations
-    MUST NOT assign semantics to unknown values and MUST treat payload as opaque (drop
-    or forward without interpreting)."
-  references:
-  - file: RNS/Transport.py
-    symbol: inbound
-    lines: {start: 1241, end: 1250}
-    role: dispatch
-- id: RNS.PKT.LAYOUT.PROOF_EXPLICIT
-  kind: layout
-  normative: MUST
-  statement: "Explicit proof payload: Packet_Hash (32 bytes) + Signature (64 bytes);
-    total 96 bytes. Receiver validates hash matches proved packet and signature over
-    hash."
-  layout:
-    fields:
-    - name: packet_hash
-      offset: 0
-      length: 32
-    - name: signature
-      offset: 32
-      length: 64
-  references:
-  - file: RNS/Packet.py
-    symbol: EXPL_LENGTH
-    lines: {start: 413, end: 414}
-    role: definition
-- id: RNS.PKT.LAYOUT.PROOF_IMPLICIT
-  kind: layout
-  normative: MUST
-  statement: "Implicit proof payload: Signature (64 bytes) only. Receiver infers proved
-    packet by validating signature against pending packets."
-  layout:
-    fields:
-    - name: signature
-      offset: 0
-      length: 64
-  references:
-  - file: RNS/Packet.py
-    symbol: IMPL_LENGTH
-    lines: {start: 413, end: 414}
-    role: definition
-- id: RNS.LNK.LAYOUT.LINKREQUEST_PAYLOAD
-  kind: layout
-  normative: MUST
-  statement: "Link request payload: Initiator X25519 public key (32 bytes) + Initiator
-    Ed25519 public key (32 bytes) + optional Signalling bytes (3 bytes). Total 64
-    or 67 bytes."
-  layout:
-    fields:
-    - name: initiator_x25519
-      offset: 0
-      length: 32
-    - name: initiator_ed25519
-      offset: 32
-      length: 32
-    - name: signalling
-      offset: 64
-      length: 3
-  references:
-  - file: RNS/Link.py
-    symbol: ECPUBSIZE
-    lines: {start: 70, end: 80}
-    role: definition
-- id: RNS.LNK.LAYOUT.LINKPROOF_PAYLOAD
-  kind: layout
-  normative: MUST
-  statement: "Link proof (LRPROOF) payload: Ed25519 Signature (64 bytes) + Responder
-    X25519 public key (32 bytes) + optional Signalling bytes (3 bytes). Signed data
-    = link_id + Responder X25519 + Responder Ed25519 + Signalling."
-  layout:
-    fields:
-    - name: signature
-      offset: 0
-      length: 64
-    - name: responder_x25519
-      offset: 64
-      length: 32
-    - name: signalling
-      offset: 96
-      length: 3
-  references:
-  - file: RNS/Link.py
-    symbol: prove
-    lines: {start: 371, end: 377}
-    role: definition
-- id: RNS.LNK.ALG.LINKPROOF_SIGNED_DATA
-  kind: algorithm
-  normative: MUST
-  statement: "Link proof signed data is link_id (16 bytes) + Responder X25519 (32)
-    + Responder Ed25519 (32) + Signalling bytes (3). Signature is Ed25519 over that
-    concatenation."
-  algorithm:
-    steps:
-    - "signed_data = link_id + pub_bytes + sig_pub_bytes + signalling_bytes."
-    - "signature = identity.sign(signed_data)."
-    - "proof_data = signature + pub_bytes + signalling_bytes."
-  references:
-  - file: RNS/Link.py
-    symbol: prove
-    lines: {start: 371, end: 377}
-    role: implementation
-- id: RNS.PKT.LAYOUT.TOKEN
-  kind: layout
-  normative: MUST
-  statement: "Token (encryption envelope): IV (16 bytes) + AES-256-CBC ciphertext
-    (PKCS7-padded) + HMAC-SHA256 (32 bytes, final 32 bytes of token). Total overhead
-    48 bytes (TOKEN_OVERHEAD)."
-  layout:
-    fields:
-    - name: iv
-      offset: 0
-      length: 16
-    - name: ciphertext
-      offset: 16
-      length: 0
-  references:
-  - file: RNS/Cryptography/Token.py
-    symbol: TOKEN_OVERHEAD
-    lines: {start: 48, end: 52}
-    role: definition
-- id: RNS.PKT.ALG.SINGLE_ENCRYPTION
-  kind: algorithm
-  normative: MUST
-  statement: "SINGLE-destination encryption: Ephemeral X25519 public key (32 bytes)
-    + Token (IV + ciphertext + HMAC). Key derived via HKDF from ECDH shared key, salt
-    = identity truncated hash, length 64, split: first 32 = HMAC key, next 32 = AES
-    key."
-  algorithm:
-    steps:
-    - "Generate ephemeral X25519 key pair; prepend ephemeral public key (32 bytes)
-      to token."
-    - "shared_key = ECDH(ephemeral_prv, peer_identity_pub)."
-    - "derived = HKDF(length=64, derive_from=shared_key, salt=identity_hash, context=b'');
-      first 32 = HMAC key, next 32 = AES-256 key."
-    - "Token: PKCS7 pad → AES-256-CBC encrypt → prepend IV (16) → HMAC-SHA256(IV||ciphertext)
-      → append HMAC (32)."
-  references:
-  - file: RNS/Identity.py
-    symbol: encrypt
-    lines: {start: 668, end: 690}
-    role: implementation
-- id: RNS.LNK.ALG.LINK_ENCRYPTION
-  kind: algorithm
-  normative: MUST
-  statement: "LINK-destination DATA encryption: Token only (no ephemeral key prefix).
-    Key derived once per link via ECDH and HKDF(salt=link_id, length=32 or 64). Ciphertext
-    on wire is Token.encrypt(plaintext)."
-  algorithm:
-    steps:
-    - "shared_key = X25519(link_prv, peer_pub) or inverse for other side."
-    - "derived = HKDF(derive_from=shared_key, salt=link_id, context=b'', length=32
-      or 64)."
-    - "ciphertext = Token(derived).encrypt(plaintext); no ephemeral prefix."
-  references:
-  - file: RNS/Link.py
-    symbol: encrypt
-    lines: {start: 1191, end: 1210}
-    role: implementation
-- id: RNS.PKT.LAYOUT.ANNOUNCE_WITH_RATCHET
-  kind: layout
-  normative: MUST
-  statement: "Announce payload with ratchet (context flag 1): PublicKey (64) + NameHash
-    (10) + RandomHash (10) + RatchetKey (32) + Signature (64) + optional App Data.
-    Fixed header 176 bytes."
-  layout:
-    fields:
-    - name: public_key
-      offset: 0
-      length: 64
-    - name: name_hash
-      offset: 64
-      length: 10
-    - name: random_hash
-      offset: 74
-      length: 10
-    - name: ratchet_key
-      offset: 84
-      length: 32
-    - name: signature
-      offset: 116
-      length: 64
-    - name: app_data
-      offset: 180
-      length: 0
-  references:
-  - file: RNS/Identity.py
-    symbol: validate_announce
-    lines: {start: 391, end: 424}
-    role: definition
-- id: RNS.PKT.LAYOUT.ANNOUNCE_WITHOUT_RATCHET
-  kind: layout
-  normative: MUST
-  statement: "Announce payload without ratchet (context flag 0): PublicKey (64) +
-    NameHash (10) + RandomHash (10) + Signature (64) + optional App Data. Fixed header
-    148 bytes."
-  layout:
-    fields:
-    - name: public_key
-      offset: 0
-      length: 64
-    - name: name_hash
-      offset: 64
-      length: 10
-    - name: random_hash
-      offset: 74
-      length: 10
-    - name: signature
-      offset: 84
-      length: 64
-    - name: app_data
-      offset: 148
-      length: 0
-  references:
-  - file: RNS/Identity.py
-    symbol: validate_announce
-    lines: {start: 391, end: 424}
-    role: definition
-- id: RNS.LNK.CONST.KEEPALIVE_INITIATOR
-  kind: constant
-  normative: MUST
-  statement: "KEEPALIVE payload initiator to responder: single byte 0xFF."
-  value:
-    number: 255
-    unit: "byte"
-  references:
-  - file: RNS/Link.py
-    symbol: KEEPALIVE
-    lines: {start: 850, end: 856}
-    role: implementation
-- id: RNS.LNK.CONST.KEEPALIVE_RESPONDER
-  kind: constant
-  normative: MUST
-  statement: "KEEPALIVE payload responder to initiator: single byte 0xFE."
-  value:
-    number: 254
-    unit: "byte"
-  references:
-  - file: RNS/Link.py
-    symbol: KEEPALIVE
-    lines: {start: 1151, end: 1158}
-    role: implementation
-- id: RNS.LNK.LAYOUT.LINKCLOSE_PAYLOAD
-  kind: layout
-  normative: MUST
-  statement: "LINKCLOSE payload: link_id (16 bytes), plaintext (no link encryption)."
-  layout:
-    fields:
-    - name: link_id
-      offset: 0
-      length: 16
-  references:
-  - file: RNS/Link.py
-    symbol: LINKCLOSE
-    lines: {start: 693, end: 698}
-    role: implementation
-- id: RNS.LNK.LAYOUT.LINKIDENTIFY_PAYLOAD
-  kind: layout
-  normative: MUST
-  statement: "LINKIDENTIFY payload (plaintext before link encrypt): PublicKey (64
-    bytes) + Signature (64 bytes). Signed data = link_id + identity.get_public_key()."
-  layout:
-    fields:
-    - name: public_key
-      offset: 0
-      length: 64
-    - name: signature
-      offset: 64
-      length: 64
-  references:
-  - file: RNS/Link.py
-    symbol: LINKIDENTIFY
-    lines: {start: 469, end: 476}
-    role: implementation
-- id: RNS.CHN.LAYOUT.CHANNEL_ENVELOPE
-  kind: layout
-  normative: MUST
-  statement: "Channel data (context CHANNEL): envelope is MSGTYPE (2 bytes, >H) +
-    Sequence (2 bytes) + Length (2 bytes) + Message Data (variable). Total 6 bytes
-    overhead. MSGTYPE >= 0xf000 reserved for system."
-  layout:
-    fields:
-    - name: msgtype
-      offset: 0
-      length: 2
-    - name: sequence
-      offset: 2
-      length: 2
-    - name: length
-      offset: 4
-      length: 2
-    - name: data
-      offset: 6
-      length: 0
-  references:
-  - file: RNS/Channel.py
-    symbol: pack
-    lines: {start: 179, end: 197}
-    role: definition
-- id: RNS.TRN.LAYOUT.PATH_REQUEST_CLIENT
-  kind: layout
-  normative: MUST
-  statement: "Path request (client to transport): Destination Hash (16 bytes) + Request
-    Tag (16 bytes)."
-  layout:
-    fields:
-    - name: destination_hash
-      offset: 0
-      length: 16
-    - name: request_tag
-      offset: 16
-      length: 16
-  references:
-  - file: RNS/Transport.py
-    symbol: path_request_handler
-    lines: {start: 2646, end: 2672}
-    role: implementation
-- id: RNS.TRN.LAYOUT.PATH_REQUEST_TRANSPORT
-  kind: layout
-  normative: MUST
-  statement: "Path request (transport to transport): Destination Hash (16) + Requesting
-    Transport Instance ID (16) + Request Tag (16)."
-  layout:
-    fields:
-    - name: destination_hash
-      offset: 0
-      length: 16
-    - name: requesting_transport_id
-      offset: 16
-      length: 16
-    - name: request_tag
-      offset: 32
-      length: 16
-  references:
-  - file: RNS/Transport.py
-    symbol: path_request_handler
-    lines: {start: 2646, end: 2672}
-    role: implementation
-- id: RNS.TRN.LAYOUT.TUNNEL_SYNTHESIS
-  kind: layout
-  normative: MUST
-  statement: "Tunnel synthesis payload: Public Key (64) + Interface Hash (32) + Random
-    Hash (16) + Signature (64). Signed data = public_key + interface_hash + random_hash."
-  layout:
-    fields:
-    - name: public_key
-      offset: 0
-      length: 64
-    - name: interface_hash
-      offset: 64
-      length: 32
-    - name: random_hash
-      offset: 96
-      length: 16
-    - name: signature
-      offset: 112
-      length: 64
-  references:
-  - file: RNS/Transport.py
-    symbol: synthesize_tunnel
-    lines: {start: 2120, end: 2132}
-    role: implementation
-- id: RNS.RES.LAYOUT.RESOURCE_ADV
-  kind: layout
-  normative: MUST
-  statement: "Resource advertisement (RESOURCE_ADV): umsgpack-packed dictionary with
-    keys t (transfer size), d (uncompressed size), n (parts), h (resource hash), r
-    (random hash), o (original hash), m (hashmap), f (flags), i (segment index), l
-    (segments), q (request id), and flag keys u/p/x/c/e/s. Implementations MUST use
-    same encoding for compatibility."
-  layout:
-    fields:
-    - name: payload
-      offset: 0
-      length: 0
-  references:
-  - file: RNS/Resource.py
-    symbol: ResourceAdvertisement
-    lines: {start: 1312, end: 1338}
-    role: definition
-- id: RNS.RES.LAYOUT.RESOURCE_REQ
-  kind: layout
-  normative: MUST
-  statement: "Resource part request (RESOURCE_REQ): Hashmap Exhausted (1 byte) + optional
-    Last Map Hash (4 bytes) + Resource Hash (32 bytes) + Requested Part Hashes (4
-    bytes each)."
-  layout:
-    fields:
-    - name: hashmap_exhausted
-      offset: 0
-      length: 1
-    - name: last_map_hash
-      offset: 1
-      length: 4
-    - name: resource_hash
-      offset: 5
-      length: 32
-    - name: requested_hashes
-      offset: 37
-      length: 0
-  references:
-  - file: RNS/Resource.py
-    symbol: request_next
-    lines: {start: 918, end: 952}
-    role: implementation
-- id: RNS.RES.LAYOUT.RESOURCE_HMU
-  kind: layout
-  normative: MUST
-  statement: "Resource hashmap update (RESOURCE_HMU): Resource Hash (32 bytes) + umsgpack.packb([segment_index,
-    hashmap_bytes])."
-  layout:
-    fields:
-    - name: resource_hash
-      offset: 0
-      length: 32
-    - name: packed_hashmap
-      offset: 32
-      length: 0
-  references:
-  - file: RNS/Resource.py
-    symbol: request
-    lines: {start: 970, end: 1047}
-    role: implementation
-- id: RNS.RES.LAYOUT.RESOURCE_PRF
-  kind: layout
-  normative: MUST
-  statement: "Resource proof (RESOURCE_PRF): Resource Hash (32 bytes, full SHA-256)
-    + Proof (32 bytes, full_hash(resource_data+resource_hash))."
-  layout:
-    fields:
-    - name: resource_hash
-      offset: 0
-      length: 32
-    - name: proof
-      offset: 32
-      length: 32
-  references:
-  - file: RNS/Resource.py
-    symbol: prove
-    lines: {start: 739, end: 748}
-    role: implementation
-- id: RNS.IFAC.ALG.IFAC_KEY_DERIVATION
-  kind: algorithm
-  normative: MUST
-  statement: "IFAC key (interface.ifac_key) is derived with HKDF: length=64, derive_from=ifac_origin_hash
-    (full_hash of ifac origin material), salt=IFAC_SALT (32-byte constant), context=None.
-    ifac_identity = Identity.from_bytes(ifac_key)."
-  algorithm:
-    steps:
-    - "Build ifac_origin from interface config (ifac_netname, ifac_netkey, etc.);
-      ifac_origin_hash = full_hash(ifac_origin)."
-    - "ifac_key = HKDF(length=64, derive_from=ifac_origin_hash, salt=IFAC_SALT, context=None)."
-    - "ifac_identity = Identity.from_bytes(ifac_key)."
-  references:
-  - file: RNS/Reticulum.py
-    symbol: ifac_key
-    lines: {start: 819, end: 826}
-    role: implementation
+    # --- Packet header layouts ---
+  - id: RNS.PKT.LAYOUT.HEADER_1
+    kind: layout
+    normative: MUST
+    statement: "HEADER_1 packets have byte 0 as flags, byte 1 as hops, bytes 2 through
+      17 as destination hash (16 bytes), and byte 18 as context; total minimum header
+      19 bytes."
+    layout:
+      fields:
+      - name: flags
+        offset: 0
+        length: 1
+      - name: hops
+        offset: 1
+        length: 1
+      - name: destination_hash
+        offset: 2
+        length: 16
+      - name: context
+        offset: 18
+        length: 1
+    references:
+    - file: RNS/Packet.py
+      symbol: unpack
+      lines: {start: 241, end: 272}
+      role: definition
+    - file: RNS/Packet.py
+      symbol: pack
+      lines: {start: 176, end: 235}
+      role: implementation
+  - id: RNS.PKT.LAYOUT.HEADER_2
+    kind: layout
+    normative: MUST
+    statement: "HEADER_2 packets have byte 0 as flags, byte 1 as hops, bytes 2 through
+      17 as transport_id, bytes 18 through 33 as destination hash, and byte 34 as context;
+      total minimum header 35 bytes."
+    layout:
+      fields:
+      - name: flags
+        offset: 0
+        length: 1
+      - name: hops
+        offset: 1
+        length: 1
+      - name: transport_id
+        offset: 2
+        length: 16
+      - name: destination_hash
+        offset: 18
+        length: 16
+      - name: context
+        offset: 34
+        length: 1
+    references:
+    - file: RNS/Packet.py
+      symbol: unpack
+      lines: {start: 241, end: 272}
+      role: definition
+  - id: RNS.PKT.CONST.HEADER_MINSIZE
+    kind: constant
+    normative: MUST
+    statement: "The minimum packet header size is 19 bytes (flags, hops, destination
+      hash, context)."
+    value:
+      number: 19
+      unit: "bytes"
+    references:
+    - file: RNS/Reticulum.py
+      symbol: HEADER_MINSIZE
+      lines: {start: 147, end: 154}
+      role: definition
+  - id: RNS.PKT.CONST.HEADER_MAXSIZE
+    kind: constant
+    normative: MUST
+    statement: "The maximum packet header size is 35 bytes (flags, hops, transport_id,
+      destination hash, context)."
+    value:
+      number: 35
+      unit: "bytes"
+    references:
+    - file: RNS/Reticulum.py
+      symbol: HEADER_MAXSIZE
+      lines: {start: 147, end: 154}
+      role: definition
+  - id: RNS.PKT.ALG.FLAGS_PACK_UNPACK
+    kind: algorithm
+    normative: MUST
+    statement: "The flags byte is packed and unpacked as follows: bit 7 IFAC-present
+      (0x80, see RNS.IFAC.CONST.IFAC_FLAG_BIT); bit 6 header type (0=HEADER_1, 1=HEADER_2);
+      bit 5 context flag; bit 4 transport type; bits 3-2 destination type; bits 1-0
+      packet type. When packing from packet fields, the IFAC bit is not set by the packet
+      layer; transport sets bit 7 on the wire when IFAC is present."
+    algorithm:
+      steps:
+      - "Header type is (flags & 0b01000000) >> 6 (bit 6 only; bit 7 is IFAC)."
+      - "Context flag is (flags & 0b00100000) >> 5."
+      - "Transport type is (flags & 0b00010000) >> 4."
+      - "Destination type is (flags & 0b00001100) >> 2."
+      - "Packet type is (flags & 0b00000011)."
+      - "When packing canonical flags (without IFAC), flags = (header_type << 6) | (context_flag
+        << 5) | (transport_type << 4) | (destination_type << 2) | packet_type. Set bit
+        7 only when emitting IFAC-protected packets on the wire."
+    references:
+    - file: RNS/Packet.py
+      symbol: get_packed_flags
+      lines: {start: 168, end: 174}
+      role: implementation
+    - file: RNS/Packet.py
+      symbol: unpack
+      lines: {start: 241, end: 252}
+      role: implementation
+  - id: RNS.PKT.ALG.HASHABLE_PART
+    kind: algorithm
+    normative: MUST
+    statement: "The hashable part is used for packet and link hashes. Byte 0 (flags)
+      is masked to 0x0F; byte 1 (hops) is excluded. For HEADER_1 the remainder is raw[2:];
+      for HEADER_2 the remainder is raw[18:] (skipping transport_id bytes 2..17)."
+    algorithm:
+      steps:
+      - "Let b0 = raw[0] & 0x0F (canonical flags low nibble; excludes header-type and
+        IFAC bits)."
+      - "If header_type is HEADER_2, hashable_part = b0 || raw[18:] (bytes [2..18) are
+        transport_id, excluded)."
+      - "Else (HEADER_1), hashable_part = b0 || raw[2:] (bytes [0,1] are flags and hops;
+        hops excluded)."
+      - "Return hashable_part."
+    references:
+    - file: RNS/Packet.py
+      symbol: get_hashable_part
+      lines: {start: 353, end: 359}
+      role: definition
+  - id: RNS.PKT.ALG.TRUNCATED_HASH
+    kind: algorithm
+    normative: MUST
+    statement: "The truncated hash is the first 16 bytes of the SHA-256 hash of the
+      input."
+    algorithm:
+      steps:
+      - "Compute full_hash = SHA-256(data)."
+      - "Return full_hash[0:(TRUNCATED_HASHLENGTH//8)]; TRUNCATED_HASHLENGTH is 128
+        bits."
+    references:
+    - file: RNS/Identity.py
+      symbol: truncated_hash
+      lines: {start: 247, end: 256}
+      role: definition
+    - file: RNS/Identity.py
+      symbol: full_hash
+      lines: {start: 238, end: 246}
+      role: derivation
+  - id: RNS.LNK.ALG.LINK_ID_FROM_LINKREQUEST
+    kind: algorithm
+    normative: MUST
+    statement: "Link ID is the truncated hash (first 16 bytes of SHA-256) of the hashable
+      part with signalling bytes stripped when payload length exceeds 64 bytes."
+    algorithm:
+      steps:
+      - "Obtain hashable_part = packet.get_hashable_part()."
+      - "If len(packet.data) > ECPUBSIZE (64), set hashable_part = hashable_part[:-diff]
+        where diff = len(packet.data) - ECPUBSIZE."
+      - "Return RNS.Identity.truncated_hash(hashable_part)."
+    references:
+    - file: RNS/Link.py
+      symbol: link_id_from_lr_packet
+      lines: {start: 340, end: 346}
+      role: definition
+  - id: RNS.LNK.CONST.LINK_MTU_SIZE
+    kind: constant
+    normative: MUST
+    statement: "Signalling bytes are exactly 3 bytes on the wire."
+    value:
+      number: 3
+      unit: "bytes"
+    references:
+    - file: RNS/Link.py
+      symbol: LINK_MTU_SIZE
+      lines: {start: 78, end: 81}
+      role: definition
+  - id: RNS.LNK.CONST.MTU_BYTEMASK
+    kind: constant
+    normative: MUST
+    statement: "The MTU value in signalling bytes is encoded in 21 bits; the byte mask
+      for the MTU field is 0x1FFFFF."
+    value:
+      number: 2097151
+      unit: "byte mask"
+      format: "0x1FFFFF"
+      max_reasonable: 2097151
+    references:
+    - file: RNS/Link.py
+      symbol: MTU_BYTEMASK
+      lines: {start: 144, end: 145}
+      role: definition
+  - id: RNS.LNK.CONST.MODE_BYTEMASK
+    kind: constant
+    normative: MUST
+    statement: "The mode value in signalling bytes occupies the top 3 bits of the first
+      byte; the byte mask is 0xE0."
+    value:
+      number: 224
+      unit: "byte mask"
+      format: "0xE0"
+    references:
+    - file: RNS/Link.py
+      symbol: MODE_BYTEMASK
+      lines: {start: 144, end: 145}
+      role: definition
+  - id: RNS.LNK.ALG.SIGNALLING_ENCODE
+    kind: algorithm
+    normative: MUST
+    statement: "Signalling bytes encode MTU (21 bits) and mode (3 bits) as three big-endian
+      bytes; byte0 = (mode<<5)|(MTU>>16), byte1 = (MTU>>8)&0xFF, byte2 = MTU&0xFF."
+    algorithm:
+      steps:
+      - "Pack signalling_value = (mtu & MTU_BYTEMASK) + (((mode<<5) & MODE_BYTEMASK)<<16)."
+      - "Pack as big-endian 32-bit unsigned integer and take bytes [1:4] (drop high
+        byte)."
+      - "Return the 3-byte sequence."
+    references:
+    - file: RNS/Link.py
+      symbol: signalling_bytes
+      lines: {start: 146, end: 150}
+      role: definition
+  - id: RNS.LNK.ALG.SIGNALLING_DECODE
+    kind: algorithm
+    normative: MUST
+    statement: "Signalling bytes decode as mode = (byte0>>5)&0x07 and MTU = ((byte0&0x1F)<<16)|(byte1<<8)|byte2."
+    algorithm:
+      steps:
+      - "Mode is (first_byte & MODE_BYTEMASK) >> 5."
+      - "MTU is (byte0<<16 + byte1<<8 + byte2) & MTU_BYTEMASK."
+    references:
+    - file: RNS/Link.py
+      symbol: mtu_from_lr_packet
+      lines: {start: 152, end: 156}
+      role: implementation
+    - file: RNS/Link.py
+      symbol: mode_from_lr_packet
+      lines: {start: 172, end: 176}
+      role: implementation
+  - id: RNS.IFAC.CONST.IFAC_FLAG_BIT
+    kind: constant
+    normative: MUST
+    statement: "The IFAC-present flag is bit 7 of the flags byte; value 0x80 when IFAC
+      is present."
+    value:
+      number: 128
+      unit: "byte mask"
+      format: "0x80"
+    references:
+    - file: RNS/Transport.py
+      symbol: new_header
+      lines: {start: 907, end: 912}
+      role: implementation
+  - id: RNS.IFAC.CONST.IFAC_SALT
+    kind: constant
+    normative: MUST
+    statement: "The IFAC key derivation uses a 32-byte salt with hex value adf54d882c9a9b80771eb4995d702d4a3e733391b2a0f53f416d9f907e55cff8."
+    value:
+      number: "adf54d882c9a9b80771eb4995d702d4a3e733391b2a0f53f416d9f907e55cff8"
+      unit: "bytes"
+      format: "hex"
+    references:
+    - file: RNS/Reticulum.py
+      symbol: IFAC_SALT
+      lines: {start: 147, end: 154}
+      role: definition
+  - id: RNS.IFAC.ALG.OUTBOUND_INSERT_AND_MASK
+    kind: algorithm
+    normative: MUST
+    statement: "Outbound IFAC: sign raw packet, take last ifac_size bytes as IFAC, insert
+      after byte 1, set bit 7 of byte 0, then mask with HKDF-derived mask. Mask bytes
+      [0], [1], and [2+ifac_size .. end); do not mask bytes [2 .. 2+ifac_size) (the
+      IFAC bytes)."
+    algorithm:
+      steps:
+      - "IFAC = sign(raw)[-ifac_size:]."
+      - "new_header = (raw[0]|0x80, raw[1]); new_raw = new_header + ifac + raw[2:] (layout:
+        [0]=flags|0x80, [1]=hops, [2..2+ifac_size)=IFAC, [2+ifac_size..end)=payload)."
+      - "mask = HKDF(length=len(new_raw), derive_from=ifac, salt=ifac_key, context=None)."
+      - "Mask bytes at indices [0], [1], and [2+ifac_size .. len(new_raw)); do not mask
+        [2 .. 2+ifac_size). Byte 0 after XOR: (new_raw[0]^mask[0])|0x80; all other masked
+        bytes: new_raw[i]^mask[i]."
+    references:
+    - file: RNS/Transport.py
+      symbol: transmit
+      lines: {start: 894, end: 928}
+      role: implementation
+  - id: RNS.IFAC.ALG.INBOUND_UNMASK_AND_VERIFY
+    kind: algorithm
+    normative: MUST
+    statement: "Inbound packets with IFAC flag set: extract IFAC from raw[2..2+ifac_size),
+      derive mask, unmask bytes [0], [1], and [2+ifac_size .. end); leave [2 .. 2+ifac_size)
+      unchanged. Reassemble canonical raw and verify IFAC equals sign(canonical_raw)[-ifac_size:]."
+    algorithm:
+      steps:
+      - "If raw[0]&0x80 != 0x80 or len(raw) <= 2+ifac_size, drop packet."
+      - "ifac = raw[2:2+ifac_size]; mask = HKDF(length=len(raw), derive_from=ifac, salt=ifac_key,
+        context=None)."
+      - "Unmask bytes at indices [0], [1], and [2+ifac_size .. len(raw)); do not unmask
+        [2 .. 2+ifac_size)."
+      - "canonical_raw = (raw[0]&0x7f, raw[1]) + raw[2+ifac_size:] (IFAC bit cleared,
+        IFAC bytes removed)."
+      - "expected_ifac = sign(canonical_raw)[-ifac_size:]; accept iff ifac == expected_ifac."
+    references:
+    - file: RNS/Transport.py
+      symbol: inbound
+      lines: {start: 1241, end: 1295}
+      role: implementation
+  - id: RNS.PKT.CONST.CTX_NONE
+    kind: constant
+    normative: NOTE
+    statement: "Context byte value 0 denotes generic data packet."
+    tags: [context]
+    value:
+      number: 0
+      unit: "byte"
+    references:
+    - file: RNS/Packet.py
+      symbol: NONE
+      lines: {start: 71, end: 92}
+      role: definition
+  - id: RNS.PKT.CONST.CTX_RESOURCE
+    kind: constant
+    normative: NOTE
+    statement: "Context byte value 1 denotes packet is part of a resource."
+    tags: [context]
+    value:
+      number: 1
+      unit: "byte"
+    references:
+    - file: RNS/Packet.py
+      symbol: RESOURCE
+      lines: {start: 71, end: 92}
+      role: definition
+  - id: RNS.PKT.CONST.CTX_RESOURCE_ADV
+    kind: constant
+    normative: NOTE
+    statement: "Context byte value 2 denotes resource advertisement."
+    tags: [context]
+    value:
+      number: 2
+      unit: "byte"
+    references:
+    - file: RNS/Packet.py
+      symbol: RESOURCE_ADV
+      lines: {start: 71, end: 92}
+      role: definition
+  - id: RNS.PKT.CONST.CTX_RESOURCE_REQ
+    kind: constant
+    normative: NOTE
+    statement: "Context byte value 3 denotes resource part request."
+    tags: [context]
+    value:
+      number: 3
+      unit: "byte"
+    references:
+    - file: RNS/Packet.py
+      symbol: RESOURCE_REQ
+      lines: {start: 71, end: 92}
+      role: definition
+  - id: RNS.PKT.CONST.CTX_RESOURCE_HMU
+    kind: constant
+    normative: NOTE
+    statement: "Context byte value 4 denotes resource hashmap update."
+    tags: [context]
+    value:
+      number: 4
+      unit: "byte"
+    references:
+    - file: RNS/Packet.py
+      symbol: RESOURCE_HMU
+      lines: {start: 71, end: 92}
+      role: definition
+  - id: RNS.PKT.CONST.CTX_RESOURCE_PRF
+    kind: constant
+    normative: NOTE
+    statement: "Context byte value 5 denotes resource proof."
+    tags: [context]
+    value:
+      number: 5
+      unit: "byte"
+    references:
+    - file: RNS/Packet.py
+      symbol: RESOURCE_PRF
+      lines: {start: 71, end: 92}
+      role: definition
+  - id: RNS.PKT.CONST.CTX_RESOURCE_ICL
+    kind: constant
+    normative: NOTE
+    statement: "Context byte value 6 denotes resource initiator cancel."
+    tags: [context]
+    value:
+      number: 6
+      unit: "byte"
+    references:
+    - file: RNS/Packet.py
+      symbol: RESOURCE_ICL
+      lines: {start: 71, end: 92}
+      role: definition
+  - id: RNS.PKT.CONST.CTX_RESOURCE_RCL
+    kind: constant
+    normative: NOTE
+    statement: "Context byte value 7 denotes resource receiver cancel."
+    tags: [context]
+    value:
+      number: 7
+      unit: "byte"
+    references:
+    - file: RNS/Packet.py
+      symbol: RESOURCE_RCL
+      lines: {start: 71, end: 92}
+      role: definition
+  - id: RNS.PKT.CONST.CTX_CACHE_REQUEST
+    kind: constant
+    normative: NOTE
+    statement: "Context byte value 8 denotes cache request."
+    tags: [context]
+    value:
+      number: 8
+      unit: "byte"
+    references:
+    - file: RNS/Packet.py
+      symbol: CACHE_REQUEST
+      lines: {start: 71, end: 92}
+      role: definition
+  - id: RNS.PKT.CONST.CTX_REQUEST
+    kind: constant
+    normative: NOTE
+    statement: "Context byte value 9 denotes request."
+    tags: [context]
+    value:
+      number: 9
+      unit: "byte"
+    references:
+    - file: RNS/Packet.py
+      symbol: REQUEST
+      lines: {start: 71, end: 92}
+      role: definition
+  - id: RNS.PKT.CONST.CTX_RESPONSE
+    kind: constant
+    normative: NOTE
+    statement: "Context byte value 10 denotes response to a request."
+    tags: [context]
+    value:
+      number: 10
+      unit: "byte"
+    references:
+    - file: RNS/Packet.py
+      symbol: RESPONSE
+      lines: {start: 71, end: 92}
+      role: definition
+  - id: RNS.PKT.CONST.CTX_PATH_RESPONSE
+    kind: constant
+    normative: NOTE
+    statement: "Context byte value 11 denotes path response."
+    tags: [context]
+    value:
+      number: 11
+      unit: "byte"
+    references:
+    - file: RNS/Packet.py
+      symbol: PATH_RESPONSE
+      lines: {start: 71, end: 92}
+      role: definition
+  - id: RNS.PKT.CONST.CTX_COMMAND
+    kind: constant
+    normative: NOTE
+    statement: "Context byte value 12 denotes command."
+    tags: [context]
+    value:
+      number: 12
+      unit: "byte"
+    references:
+    - file: RNS/Packet.py
+      symbol: COMMAND
+      lines: {start: 71, end: 92}
+      role: definition
+  - id: RNS.PKT.CONST.CTX_COMMAND_STATUS
+    kind: constant
+    normative: NOTE
+    statement: "Context byte value 13 denotes command status."
+    tags: [context]
+    value:
+      number: 13
+      unit: "byte"
+    references:
+    - file: RNS/Packet.py
+      symbol: COMMAND_STATUS
+      lines: {start: 71, end: 92}
+      role: definition
+  - id: RNS.PKT.CONST.CTX_CHANNEL
+    kind: constant
+    normative: NOTE
+    statement: "Context byte value 14 denotes link channel data."
+    tags: [context]
+    value:
+      number: 14
+      unit: "byte"
+    references:
+    - file: RNS/Packet.py
+      symbol: CHANNEL
+      lines: {start: 71, end: 92}
+      role: definition
+  - id: RNS.PKT.CONST.CTX_KEEPALIVE
+    kind: constant
+    normative: NOTE
+    statement: "Context byte value 250 denotes keepalive packet."
+    tags: [context]
+    value:
+      number: 250
+      unit: "byte"
+    references:
+    - file: RNS/Packet.py
+      symbol: KEEPALIVE
+      lines: {start: 71, end: 92}
+      role: definition
+  - id: RNS.PKT.CONST.CTX_LINKIDENTIFY
+    kind: constant
+    normative: NOTE
+    statement: "Context byte value 251 denotes link peer identification proof."
+    tags: [context]
+    value:
+      number: 251
+      unit: "byte"
+    references:
+    - file: RNS/Packet.py
+      symbol: LINKIDENTIFY
+      lines: {start: 71, end: 92}
+      role: definition
+  - id: RNS.PKT.CONST.CTX_LINKCLOSE
+    kind: constant
+    normative: NOTE
+    statement: "Context byte value 252 denotes link close message."
+    tags: [context]
+    value:
+      number: 252
+      unit: "byte"
+    references:
+    - file: RNS/Packet.py
+      symbol: LINKCLOSE
+      lines: {start: 71, end: 92}
+      role: definition
+  - id: RNS.PKT.CONST.CTX_LINKPROOF
+    kind: constant
+    normative: NOTE
+    statement: "Context byte value 253 denotes link packet proof."
+    tags: [context]
+    value:
+      number: 253
+      unit: "byte"
+    references:
+    - file: RNS/Packet.py
+      symbol: LINKPROOF
+      lines: {start: 71, end: 92}
+      role: definition
+  - id: RNS.PKT.CONST.CTX_LRRTT
+    kind: constant
+    normative: NOTE
+    statement: "Context byte value 254 denotes link request round-trip time measurement."
+    tags: [context]
+    value:
+      number: 254
+      unit: "byte"
+    references:
+    - file: RNS/Packet.py
+      symbol: LRRTT
+      lines: {start: 71, end: 92}
+      role: definition
+  - id: RNS.PKT.CONST.CTX_LRPROOF
+    kind: constant
+    normative: NOTE
+    statement: "Context byte value 255 denotes link request proof."
+    tags: [context]
+    value:
+      number: 255
+      unit: "byte"
+    references:
+    - file: RNS/Packet.py
+      symbol: LRPROOF
+      lines: {start: 71, end: 92}
+      role: definition
+  - id: RNS.TRN.CONST.MTU_DEFAULT
+    kind: constant
+    normative: MUST
+    statement: "Default physical-layer MTU is 500 bytes; the wire packet length MUST
+      NOT exceed the applicable MTU (interface or link)."
+    value:
+      number: 500
+      unit: "bytes"
+    references:
+    - file: RNS/Reticulum.py
+      symbol: MTU
+      lines: {start: 89, end: 95}
+      role: definition
+  - id: RNS.TRN.CONST.DST_LEN
+    kind: constant
+    normative: MUST
+    statement: "Destination hash, transport id, and link_id are 16 bytes (TRUNCATED_HASHLENGTH//8)."
+    value:
+      number: 16
+      unit: "bytes"
+    references:
+    - file: RNS/Reticulum.py
+      symbol: TRUNCATED_HASHLENGTH
+      lines: {start: 147, end: 154}
+      role: definition
+  - id: RNS.TRN.CONST.IFAC_MIN_SIZE
+    kind: constant
+    normative: MUST
+    statement: "Minimum IFAC payload length is 1 byte; interface.ifac_size defines actual
+      length."
+    value:
+      number: 1
+      unit: "bytes"
+    references:
+    - file: RNS/Reticulum.py
+      symbol: IFAC_MIN_SIZE
+      lines: {start: 147, end: 154}
+      role: definition
+  - id: RNS.TRN.CONST.MDU
+    kind: constant
+    normative: NOTE
+    statement: "MDU (maximum data unit) is MTU minus HEADER_MAXSIZE and IFAC_MIN_SIZE;
+      maximum plaintext in a single packet before encryption overhead."
+    value:
+      number: 464
+      unit: "bytes"
+    references:
+    - file: RNS/Reticulum.py
+      symbol: MDU
+      lines: {start: 147, end: 154}
+      role: definition
+  - id: RNS.PKT.CONST.KEYSIZE_BYTES
+    kind: constant
+    normative: MUST
+    statement: "Identity public and private key format is 64 bytes (X25519 32 + Ed25519
+      32)."
+    value:
+      number: 64
+      unit: "bytes"
+    references:
+    - file: RNS/Identity.py
+      symbol: KEYSIZE
+      lines: {start: 59, end: 89}
+      role: definition
+  - id: RNS.PKT.CONST.SIGLENGTH_BYTES
+    kind: constant
+    normative: MUST
+    statement: "Ed25519 signature length is 64 bytes."
+    value:
+      number: 64
+      unit: "bytes"
+    references:
+    - file: RNS/Identity.py
+      symbol: SIGLENGTH
+      lines: {start: 59, end: 89}
+      role: definition
+  - id: RNS.PKT.CONST.HASHLENGTH_BYTES
+    kind: constant
+    normative: MUST
+    statement: "Full SHA-256 hash length is 32 bytes."
+    value:
+      number: 32
+      unit: "bytes"
+    references:
+    - file: RNS/Identity.py
+      symbol: HASHLENGTH
+      lines: {start: 59, end: 89}
+      role: definition
+  - id: RNS.PKT.CONST.RATCHETSIZE_BYTES
+    kind: constant
+    normative: MUST
+    statement: "Ratchet public key is 32 bytes (RATCHETSIZE//8)."
+    value:
+      number: 32
+      unit: "bytes"
+    references:
+    - file: RNS/Identity.py
+      symbol: RATCHETSIZE
+      lines: {start: 59, end: 89}
+      role: definition
+  - id: RNS.PKT.CONST.NAME_HASH_LENGTH_BYTES
+    kind: constant
+    normative: MUST
+    statement: "Name hash and announce random hash are 10 bytes (NAME_HASH_LENGTH//8)."
+    value:
+      number: 10
+      unit: "bytes"
+    references:
+    - file: RNS/Identity.py
+      symbol: NAME_HASH_LENGTH
+      lines: {start: 59, end: 89}
+      role: definition
+  - id: RNS.PKT.CONST.TOKEN_OVERHEAD
+    kind: constant
+    normative: MUST
+    statement: "Token overhead is 48 bytes (IV 16 + HMAC 32)."
+    value:
+      number: 48
+      unit: "bytes"
+    references:
+    - file: RNS/Cryptography/Token.py
+      symbol: TOKEN_OVERHEAD
+      lines: {start: 48, end: 52}
+      role: definition
+  - id: RNS.PKT.CONST.AES128_BLOCKSIZE
+    kind: constant
+    normative: MUST
+    statement: "AES block size is 16 bytes (used for padding and ciphertext alignment)."
+    value:
+      number: 16
+      unit: "bytes"
+    references:
+    - file: RNS/Identity.py
+      symbol: AES128_BLOCKSIZE
+      lines: {start: 59, end: 89}
+      role: definition
+  - id: RNS.RES.CONST.MAPHASH_LEN
+    kind: constant
+    normative: MUST
+    statement: "Resource map hash (part hash) is 4 bytes; first 4 bytes of full_hash(part_data+random_hash)."
+    value:
+      number: 4
+      unit: "bytes"
+    references:
+    - file: RNS/Resource.py
+      symbol: MAPHASH_LEN
+      lines: {start: 100, end: 106}
+      role: definition
+  - id: RNS.LNK.CONST.ECPUBSIZE
+    kind: constant
+    normative: MUST
+    statement: "Link request/response key material is 64 bytes (Initiator X25519 32
+      + Ed25519 32)."
+    value:
+      number: 64
+      unit: "bytes"
+    references:
+    - file: RNS/Link.py
+      symbol: ECPUBSIZE
+      lines: {start: 70, end: 80}
+      role: definition
+  - id: RNS.PKT.ALG.DESTINATION_HASH_FROM_NAME
+    kind: algorithm
+    normative: MUST
+    statement: "Destination hash (16 bytes) is derived from human-readable name and
+      optional identity: expand_name (app_name + aspects, + identity.hexhash if present),
+      name_hash = SHA-256(expand_name(None, app_name, *aspects).encode())[:10], addr_hash_material
+      = name_hash [+ identity.hash if identity], destination_hash = SHA-256(addr_hash_material)[:16]."
+    algorithm:
+      steps:
+      - "Build full name string: app_name + '.' + aspect1 + '.' + ... ; if identity
+        supplied append '.' + identity.hexhash. No dots inside app_name or aspects."
+      - "name_hash = SHA-256(expand_name(None, app_name, *aspects).encode('utf-8'))[:NAME_HASH_LENGTH//8]
+        (10 bytes)."
+      - "addr_hash_material = name_hash; if identity is not None append identity.hash
+        (16 bytes) or identity bytes."
+      - "Return full_hash(addr_hash_material)[:TRUNCATED_HASHLENGTH//8] (16 bytes)."
+    references:
+    - file: RNS/Destination.py
+      symbol: hash
+      lines: {start: 96, end: 130}
+      role: definition
+  - id: RNS.PKT.CONST.TRANSPORT_BROADCAST
+    kind: constant
+    normative: NOTE
+    statement: "Flags byte bit 4 value 0 denotes BROADCAST transport type on the wire."
+    value:
+      number: 0
+      unit: "byte"
+    references:
+    - file: RNS/Transport.py
+      symbol: BROADCAST
+      lines: {start: 49, end: 54}
+      role: definition
+  - id: RNS.PKT.CONST.TRANSPORT_TRANSPORT
+    kind: constant
+    normative: NOTE
+    statement: "Flags byte bit 4 value 1 denotes TRANSPORT transport type on the wire."
+    value:
+      number: 1
+      unit: "byte"
+    references:
+    - file: RNS/Transport.py
+      symbol: TRANSPORT
+      lines: {start: 49, end: 54}
+      role: definition
+  - id: RNS.TRN.BEHAV.HDLC_FRAMING
+    kind: behaviour
+    normative: MUST
+    statement: "HDLC framing (TCP, Serial, Pipe, Weave): packets delimited by FLAG 0x7E.
+      Escape 0x7E to 0x7D 0x5E, 0x7D to 0x7D 0x5D. Unescape then extract frame between
+      FLAG bytes."
+    references:
+    - file: RNS/Interfaces/TCPInterface.py
+      symbol: HDLC
+      lines: {start: 44, end: 53}
+      role: definition
+  - id: RNS.TRN.BEHAV.KISS_FRAMING
+    kind: behaviour
+    normative: MUST
+    statement: "KISS framing (packet radio): packets delimited by FEND 0xC0; command
+      byte 0x00 (CMD_DATA) prepended before escaping. Escape 0xC0 to 0xDB 0xDC, 0xDB
+      to 0xDB 0xDD. Unescape then payload is data after command byte between FEND boundaries."
+    references:
+    - file: RNS/Interfaces/TCPInterface.py
+      symbol: KISS
+      lines: {start: 55, end: 66}
+      role: definition
+    - file: RNS/Interfaces/KISSInterface.py
+      symbol: KISS
+      lines: {start: 38, end: 57}
+      role: implementation
+  - id: RNS.TRN.BEHAV.RAW_UDP
+    kind: behaviour
+    normative: NOTE
+    statement: "UDPInterface sends on-wire packet bytes raw inside UDP payload; one
+      datagram equals one packet (no HDLC or KISS)."
+    references:
+    - file: RNS/Interfaces/UDPInterface.py
+      symbol: UDPInterface
+      lines: {start: 40, end: 46}
+      role: definition
+  - id: RNS.PKT.RULE.WELLFORMED_PACKET
+    kind: validation_rule
+    normative: MUST
+    statement: "After IFAC removal (if present), packet MUST be parseable as HEADER_1
+      or HEADER_2 and length MUST be at least HEADER_MINSIZE or HEADER_MAXSIZE respectively.
+      Malformed packets MUST be discarded."
+    references:
+    - file: RNS/Transport.py
+      symbol: inbound
+      lines: {start: 1241, end: 1250}
+      role: implementation
+  - id: RNS.PKT.RULE.UNKNOWN_CONTEXT_OPAQUE
+    kind: validation_rule
+    normative: MUST
+    statement: "Unknown context or packet type values MAY appear on the wire; implementations
+      MUST NOT assign semantics to unknown values and MUST treat payload as opaque (drop
+      or forward without interpreting)."
+    references:
+    - file: RNS/Transport.py
+      symbol: inbound
+      lines: {start: 1241, end: 1250}
+      role: dispatch
+  - id: RNS.PKT.LAYOUT.PROOF_EXPLICIT
+    kind: layout
+    normative: MUST
+    statement: "Explicit proof payload: Packet_Hash (32 bytes) + Signature (64 bytes);
+      total 96 bytes. Receiver validates hash matches proved packet and signature over
+      hash."
+    layout:
+      fields:
+      - name: packet_hash
+        offset: 0
+        length: 32
+      - name: signature
+        offset: 32
+        length: 64
+    references:
+    - file: RNS/Packet.py
+      symbol: EXPL_LENGTH
+      lines: {start: 413, end: 414}
+      role: definition
+  - id: RNS.PKT.LAYOUT.PROOF_IMPLICIT
+    kind: layout
+    normative: MUST
+    statement: "Implicit proof payload: Signature (64 bytes) only. Receiver infers proved
+      packet by validating signature against pending packets."
+    layout:
+      fields:
+      - name: signature
+        offset: 0
+        length: 64
+    references:
+    - file: RNS/Packet.py
+      symbol: IMPL_LENGTH
+      lines: {start: 413, end: 414}
+      role: definition
+  - id: RNS.LNK.LAYOUT.LINKREQUEST_PAYLOAD
+    kind: layout
+    normative: MUST
+    statement: "Link request payload: Initiator X25519 public key (32 bytes) + Initiator
+      Ed25519 public key (32 bytes) + optional Signalling bytes (3 bytes). Total 64
+      or 67 bytes."
+    layout:
+      fields:
+      - name: initiator_x25519
+        offset: 0
+        length: 32
+      - name: initiator_ed25519
+        offset: 32
+        length: 32
+      - name: signalling
+        offset: 64
+        length: 3
+    references:
+    - file: RNS/Link.py
+      symbol: ECPUBSIZE
+      lines: {start: 70, end: 80}
+      role: definition
+  - id: RNS.LNK.LAYOUT.LINKPROOF_PAYLOAD
+    kind: layout
+    normative: MUST
+    statement: "Link proof (LRPROOF) payload: Ed25519 Signature (64 bytes) + Responder
+      X25519 public key (32 bytes) + optional Signalling bytes (3 bytes). Signed data
+      = link_id + Responder X25519 + Responder Ed25519 + Signalling."
+    layout:
+      fields:
+      - name: signature
+        offset: 0
+        length: 64
+      - name: responder_x25519
+        offset: 64
+        length: 32
+      - name: signalling
+        offset: 96
+        length: 3
+    references:
+    - file: RNS/Link.py
+      symbol: prove
+      lines: {start: 371, end: 377}
+      role: definition
+  - id: RNS.LNK.ALG.LINKPROOF_SIGNED_DATA
+    kind: algorithm
+    normative: MUST
+    statement: "Link proof signed data is link_id (16 bytes) + Responder X25519 (32)
+      + Responder Ed25519 (32) + Signalling bytes (3). Signature is Ed25519 over that
+      concatenation."
+    algorithm:
+      steps:
+      - "signed_data = link_id + pub_bytes + sig_pub_bytes + signalling_bytes."
+      - "signature = identity.sign(signed_data)."
+      - "proof_data = signature + pub_bytes + signalling_bytes."
+    references:
+    - file: RNS/Link.py
+      symbol: prove
+      lines: {start: 371, end: 377}
+      role: implementation
+  - id: RNS.PKT.LAYOUT.TOKEN
+    kind: layout
+    normative: MUST
+    statement: "Token (encryption envelope): IV (16 bytes) + AES-256-CBC ciphertext
+      (PKCS7-padded) + HMAC-SHA256 (32 bytes, final 32 bytes of token). Total overhead
+      48 bytes (TOKEN_OVERHEAD)."
+    layout:
+      fields:
+      - name: iv
+        offset: 0
+        length: 16
+      - name: ciphertext
+        offset: 16
+        length: 0
+    references:
+    - file: RNS/Cryptography/Token.py
+      symbol: TOKEN_OVERHEAD
+      lines: {start: 48, end: 52}
+      role: definition
+  - id: RNS.PKT.ALG.SINGLE_ENCRYPTION
+    kind: algorithm
+    normative: MUST
+    statement: "SINGLE-destination encryption: Ephemeral X25519 public key (32 bytes)
+      + Token (IV + ciphertext + HMAC). Key derived via HKDF from ECDH shared key, salt
+      = identity truncated hash, length 64, split: first 32 = HMAC key, next 32 = AES
+      key."
+    algorithm:
+      steps:
+      - "Generate ephemeral X25519 key pair; prepend ephemeral public key (32 bytes)
+        to token."
+      - "shared_key = ECDH(ephemeral_prv, peer_identity_pub)."
+      - "derived = HKDF(length=64, derive_from=shared_key, salt=identity_hash, context=b'');
+        first 32 = HMAC key, next 32 = AES-256 key."
+      - "Token: PKCS7 pad → AES-256-CBC encrypt → prepend IV (16) → HMAC-SHA256(IV||ciphertext)
+        → append HMAC (32)."
+    references:
+    - file: RNS/Identity.py
+      symbol: encrypt
+      lines: {start: 668, end: 690}
+      role: implementation
+  - id: RNS.LNK.ALG.LINK_ENCRYPTION
+    kind: algorithm
+    normative: MUST
+    statement: "LINK-destination DATA encryption: Token only (no ephemeral key prefix).
+      Key derived once per link via ECDH and HKDF(salt=link_id, length=32 or 64). Ciphertext
+      on wire is Token.encrypt(plaintext)."
+    algorithm:
+      steps:
+      - "shared_key = X25519(link_prv, peer_pub) or inverse for other side."
+      - "derived = HKDF(derive_from=shared_key, salt=link_id, context=b'', length=32
+        or 64)."
+      - "ciphertext = Token(derived).encrypt(plaintext); no ephemeral prefix."
+    references:
+    - file: RNS/Link.py
+      symbol: encrypt
+      lines: {start: 1191, end: 1210}
+      role: implementation
+  - id: RNS.PKT.LAYOUT.ANNOUNCE_WITH_RATCHET
+    kind: layout
+    normative: MUST
+    statement: "Announce payload with ratchet (context flag 1): PublicKey (64) + NameHash
+      (10) + RandomHash (10) + RatchetKey (32) + Signature (64) + optional App Data.
+      Fixed header 176 bytes."
+    layout:
+      fields:
+      - name: public_key
+        offset: 0
+        length: 64
+      - name: name_hash
+        offset: 64
+        length: 10
+      - name: random_hash
+        offset: 74
+        length: 10
+      - name: ratchet_key
+        offset: 84
+        length: 32
+      - name: signature
+        offset: 116
+        length: 64
+      - name: app_data
+        offset: 180
+        length: 0
+    references:
+    - file: RNS/Identity.py
+      symbol: validate_announce
+      lines: {start: 391, end: 424}
+      role: definition
+  - id: RNS.PKT.LAYOUT.ANNOUNCE_WITHOUT_RATCHET
+    kind: layout
+    normative: MUST
+    statement: "Announce payload without ratchet (context flag 0): PublicKey (64) +
+      NameHash (10) + RandomHash (10) + Signature (64) + optional App Data. Fixed header
+      148 bytes."
+    layout:
+      fields:
+      - name: public_key
+        offset: 0
+        length: 64
+      - name: name_hash
+        offset: 64
+        length: 10
+      - name: random_hash
+        offset: 74
+        length: 10
+      - name: signature
+        offset: 84
+        length: 64
+      - name: app_data
+        offset: 148
+        length: 0
+    references:
+    - file: RNS/Identity.py
+      symbol: validate_announce
+      lines: {start: 391, end: 424}
+      role: definition
+  - id: RNS.LNK.CONST.KEEPALIVE_INITIATOR
+    kind: constant
+    normative: MUST
+    statement: "KEEPALIVE payload initiator to responder: single byte 0xFF."
+    value:
+      number: 255
+      unit: "byte"
+    references:
+    - file: RNS/Link.py
+      symbol: KEEPALIVE
+      lines: {start: 850, end: 856}
+      role: implementation
+  - id: RNS.LNK.CONST.KEEPALIVE_RESPONDER
+    kind: constant
+    normative: MUST
+    statement: "KEEPALIVE payload responder to initiator: single byte 0xFE."
+    value:
+      number: 254
+      unit: "byte"
+    references:
+    - file: RNS/Link.py
+      symbol: KEEPALIVE
+      lines: {start: 1151, end: 1158}
+      role: implementation
+  - id: RNS.LNK.LAYOUT.LINKCLOSE_PAYLOAD
+    kind: layout
+    normative: MUST
+    statement: "LINKCLOSE payload: link_id (16 bytes), plaintext (no link encryption)."
+    layout:
+      fields:
+      - name: link_id
+        offset: 0
+        length: 16
+    references:
+    - file: RNS/Link.py
+      symbol: LINKCLOSE
+      lines: {start: 693, end: 698}
+      role: implementation
+  - id: RNS.LNK.LAYOUT.LINKIDENTIFY_PAYLOAD
+    kind: layout
+    normative: MUST
+    statement: "LINKIDENTIFY payload (plaintext before link encrypt): PublicKey (64
+      bytes) + Signature (64 bytes). Signed data = link_id + identity.get_public_key()."
+    layout:
+      fields:
+      - name: public_key
+        offset: 0
+        length: 64
+      - name: signature
+        offset: 64
+        length: 64
+    references:
+    - file: RNS/Link.py
+      symbol: LINKIDENTIFY
+      lines: {start: 469, end: 476}
+      role: implementation
+  - id: RNS.CHN.LAYOUT.CHANNEL_ENVELOPE
+    kind: layout
+    normative: MUST
+    statement: "Channel data (context CHANNEL): envelope is MSGTYPE (2 bytes, >H) +
+      Sequence (2 bytes) + Length (2 bytes) + Message Data (variable). Total 6 bytes
+      overhead. MSGTYPE >= 0xf000 reserved for system."
+    layout:
+      fields:
+      - name: msgtype
+        offset: 0
+        length: 2
+      - name: sequence
+        offset: 2
+        length: 2
+      - name: length
+        offset: 4
+        length: 2
+      - name: data
+        offset: 6
+        length: 0
+    references:
+    - file: RNS/Channel.py
+      symbol: pack
+      lines: {start: 179, end: 197}
+      role: definition
+  - id: RNS.TRN.LAYOUT.PATH_REQUEST_CLIENT
+    kind: layout
+    normative: MUST
+    statement: "Path request (client to transport): Destination Hash (16 bytes) + Request
+      Tag (16 bytes)."
+    layout:
+      fields:
+      - name: destination_hash
+        offset: 0
+        length: 16
+      - name: request_tag
+        offset: 16
+        length: 16
+    references:
+    - file: RNS/Transport.py
+      symbol: path_request_handler
+      lines: {start: 2646, end: 2672}
+      role: implementation
+  - id: RNS.TRN.LAYOUT.PATH_REQUEST_TRANSPORT
+    kind: layout
+    normative: MUST
+    statement: "Path request (transport to transport): Destination Hash (16) + Requesting
+      Transport Instance ID (16) + Request Tag (16)."
+    layout:
+      fields:
+      - name: destination_hash
+        offset: 0
+        length: 16
+      - name: requesting_transport_id
+        offset: 16
+        length: 16
+      - name: request_tag
+        offset: 32
+        length: 16
+    references:
+    - file: RNS/Transport.py
+      symbol: path_request_handler
+      lines: {start: 2646, end: 2672}
+      role: implementation
+  - id: RNS.TRN.LAYOUT.TUNNEL_SYNTHESIS
+    kind: layout
+    normative: MUST
+    statement: "Tunnel synthesis payload: Public Key (64) + Interface Hash (32) + Random
+      Hash (16) + Signature (64). Signed data = public_key + interface_hash + random_hash."
+    layout:
+      fields:
+      - name: public_key
+        offset: 0
+        length: 64
+      - name: interface_hash
+        offset: 64
+        length: 32
+      - name: random_hash
+        offset: 96
+        length: 16
+      - name: signature
+        offset: 112
+        length: 64
+    references:
+    - file: RNS/Transport.py
+      symbol: synthesize_tunnel
+      lines: {start: 2120, end: 2132}
+      role: implementation
+  - id: RNS.RES.LAYOUT.RESOURCE_ADV
+    kind: layout
+    normative: MUST
+    statement: "Resource advertisement (RESOURCE_ADV): umsgpack-packed dictionary with
+      keys t (transfer size), d (uncompressed size), n (parts), h (resource hash), r
+      (random hash), o (original hash), m (hashmap), f (flags), i (segment index), l
+      (segments), q (request id), and flag keys u/p/x/c/e/s. Implementations MUST use
+      same encoding for compatibility."
+    layout:
+      fields:
+      - name: payload
+        offset: 0
+        length: 0
+    references:
+    - file: RNS/Resource.py
+      symbol: ResourceAdvertisement
+      lines: {start: 1312, end: 1338}
+      role: definition
+  - id: RNS.RES.LAYOUT.RESOURCE_REQ
+    kind: layout
+    normative: MUST
+    statement: "Resource part request (RESOURCE_REQ): Hashmap Exhausted (1 byte) + optional
+      Last Map Hash (4 bytes) + Resource Hash (32 bytes) + Requested Part Hashes (4
+      bytes each)."
+    layout:
+      fields:
+      - name: hashmap_exhausted
+        offset: 0
+        length: 1
+      - name: last_map_hash
+        offset: 1
+        length: 4
+      - name: resource_hash
+        offset: 5
+        length: 32
+      - name: requested_hashes
+        offset: 37
+        length: 0
+    references:
+    - file: RNS/Resource.py
+      symbol: request_next
+      lines: {start: 918, end: 952}
+      role: implementation
+  - id: RNS.RES.LAYOUT.RESOURCE_HMU
+    kind: layout
+    normative: MUST
+    statement: "Resource hashmap update (RESOURCE_HMU): Resource Hash (32 bytes) + umsgpack.packb([segment_index,
+      hashmap_bytes])."
+    layout:
+      fields:
+      - name: resource_hash
+        offset: 0
+        length: 32
+      - name: packed_hashmap
+        offset: 32
+        length: 0
+    references:
+    - file: RNS/Resource.py
+      symbol: request
+      lines: {start: 970, end: 1047}
+      role: implementation
+  - id: RNS.RES.LAYOUT.RESOURCE_PRF
+    kind: layout
+    normative: MUST
+    statement: "Resource proof (RESOURCE_PRF): Resource Hash (32 bytes, full SHA-256)
+      + Proof (32 bytes, full_hash(resource_data+resource_hash))."
+    layout:
+      fields:
+      - name: resource_hash
+        offset: 0
+        length: 32
+      - name: proof
+        offset: 32
+        length: 32
+    references:
+    - file: RNS/Resource.py
+      symbol: prove
+      lines: {start: 739, end: 748}
+      role: implementation
+  - id: RNS.IFAC.ALG.IFAC_KEY_DERIVATION
+    kind: algorithm
+    normative: MUST
+    statement: "IFAC key (interface.ifac_key) is derived with HKDF: length=64, derive_from=ifac_origin_hash
+      (full_hash of ifac origin material), salt=IFAC_SALT (32-byte constant), context=None.
+      ifac_identity = Identity.from_bytes(ifac_key)."
+    algorithm:
+      steps:
+      - "Build ifac_origin from interface config (ifac_netname, ifac_netkey, etc.);
+        ifac_origin_hash = full_hash(ifac_origin)."
+      - "ifac_key = HKDF(length=64, derive_from=ifac_origin_hash, salt=IFAC_SALT, context=None)."
+      - "ifac_identity = Identity.from_bytes(ifac_key)."
+    references:
+    - file: RNS/Reticulum.py
+      symbol: ifac_key
+      lines: {start: 819, end: 826}
+      role: implementation
