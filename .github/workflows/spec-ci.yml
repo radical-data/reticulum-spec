@@ -37,6 +37,9 @@ jobs:
       - name: Install Python dependencies (pinned)
         run: uv sync
 
+      - name: YAML lint (yamllint)
+        run: uv run yamllint -c .yamllint spec/
+
       - name: Populate vendor/reticulum-source (pinned from SSOT)
         run: |
           VENDOR_URL=$(uv run python -c "import yaml; d=yaml.safe_load(open('spec/reticulum-wire-format.ssot.yaml')); print(d['spec_meta']['source_of_truth']['url'])")

@@ -13,7 +13,6 @@ from pathlib import Path
 
 import pytest
 
-
 VECTORS_DIR = Path(__file__).resolve().parent / "vectors"
 REPO_ROOT = Path(__file__).resolve().parent.parent
 ECPUBSIZE = 64
@@ -23,6 +22,7 @@ def _load_yaml(path: Path):
     """Load YAML with safe loader only. Do not use yaml.load() without Loader= — use safe_load."""
     try:
         import yaml
+
         with open(path, encoding="utf-8") as f:
             return yaml.safe_load(f)
     except ImportError:
@@ -104,7 +104,7 @@ def test_hashable_part_hashable_bytes_match():
     data = _load_yaml(VECTORS_DIR / "hashable_part.yaml")
     if not data:
         pytest.skip("no hashable_part.yaml")
-    for v in (data.get("vectors") or []):
+    for v in data.get("vectors") or []:
         packet_hex = v.get("packet_hex")
         expected_hex = v.get("expected_hashable_hex")
         if not packet_hex or not expected_hex:
@@ -120,7 +120,7 @@ def test_hashable_part_sha256_matches():
     data = _load_yaml(VECTORS_DIR / "hashable_part.yaml")
     if not data:
         pytest.skip("no hashable_part.yaml")
-    for v in (data.get("vectors") or []):
+    for v in data.get("vectors") or []:
         expected_hex = v.get("expected_hashable_hex")
         expected_sha = v.get("expected_sha256_hex")
         assert expected_hex, f"vector {v.get('name')} missing expected_hashable_hex"
@@ -147,7 +147,9 @@ def test_ifac_masking_required_fields():
         assert v.get("ifac_bytes_hex"), f"vector {v.get('name')} missing ifac_bytes_hex"
         assert v.get("ifac_key_hex"), f"vector {v.get('name')} missing ifac_key_hex"
         assert v.get("expected_on_wire_hex"), f"vector {v.get('name')} missing expected_on_wire_hex"
-        assert v.get("expected_recovered_canonical_hex"), f"vector {v.get('name')} missing expected_recovered_canonical_hex"
+        assert v.get("expected_recovered_canonical_hex"), (
+            f"vector {v.get('name')} missing expected_recovered_canonical_hex"
+        )
         ifac_key_bytes = bytes.fromhex(v["ifac_key_hex"])
         assert len(ifac_key_bytes) == IFAC_KEY_BYTES, (
             f"vector {v.get('name')}: ifac_key_hex must decode to {IFAC_KEY_BYTES} bytes, got {len(ifac_key_bytes)}"
@@ -161,7 +163,7 @@ def test_ifac_masking_recovered_equals_canonical():
     data = _load_yaml(VECTORS_DIR / "ifac_masking.yaml")
     if not data:
         pytest.skip("no ifac_masking.yaml")
-    for v in (data.get("vectors") or []):
+    for v in data.get("vectors") or []:
         canonical = v.get("canonical_packet_hex")
         recovered = v.get("expected_recovered_canonical_hex")
         assert canonical, f"vector {v.get('name')} missing canonical_packet_hex"
@@ -174,7 +176,7 @@ def test_ifac_on_wire_match():
     data = _load_yaml(VECTORS_DIR / "ifac_masking.yaml")
     if not data:
         pytest.skip("no ifac_masking.yaml")
-    for v in (data.get("vectors") or []):
+    for v in data.get("vectors") or []:
         canonical_hex = v.get("canonical_packet_hex")
         ifac_hex = v.get("ifac_bytes_hex")
         key_hex = v.get("ifac_key_hex")
@@ -193,7 +195,7 @@ def test_ifac_unmask_match():
     data = _load_yaml(VECTORS_DIR / "ifac_masking.yaml")
     if not data:
         pytest.skip("no ifac_masking.yaml")
-    for v in (data.get("vectors") or []):
+    for v in data.get("vectors") or []:
         on_wire_hex = v.get("expected_on_wire_hex")
         ifac_hex = v.get("ifac_bytes_hex")
         key_hex = v.get("ifac_key_hex")
@@ -227,7 +229,7 @@ def test_link_id_strip_rule():
     data = _load_yaml(VECTORS_DIR / "link_id_from_linkrequest.yaml")
     if not data:
         pytest.skip("no link_id_from_linkrequest.yaml")
-    for v in (data.get("vectors") or []):
+    for v in data.get("vectors") or []:
         part_hex = (v.get("hashable_part_before_strip_hex") or v.get("hashable_part_hex") or "").strip()
         expected_id_raw = (v.get("expected_link_id_hex") or "").strip()
         if not part_hex or not expected_id_raw:
@@ -275,7 +277,7 @@ def test_signalling_decode():
     data = _load_yaml(VECTORS_DIR / "signalling_bytes.yaml")
     if not data:
         pytest.skip("no signalling_bytes.yaml")
-    for v in (data.get("vectors") or []):
+    for v in data.get("vectors") or []:
         if "bytes_hex" not in v or "expected_mtu" not in v or "expected_mode" not in v:
             continue
         raw = bytes.fromhex(v["bytes_hex"])
@@ -298,7 +300,7 @@ def test_signalling_encode():
     data = _load_yaml(VECTORS_DIR / "signalling_bytes.yaml")
     if not data:
         pytest.skip("no signalling_bytes.yaml")
-    for v in (data.get("vectors") or []):
+    for v in data.get("vectors") or []:
         if "mtu" not in v or "mode" not in v or "expected_bytes_hex" not in v:
             continue
         mtu = int(v["mtu"]) & 0x1FFFFF

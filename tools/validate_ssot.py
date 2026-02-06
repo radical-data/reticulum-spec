@@ -86,6 +86,19 @@ def main() -> int:
             print(e, file=sys.stderr)
         return 1
 
+    # Atoms list indentation: list items under atoms: MUST be indented (e.g. "  - id:" not "- id:" at column 0)
+    raw_lines = ssot_path.read_text(encoding="utf-8").splitlines()
+    in_atoms = False
+    for i, line in enumerate(raw_lines):
+        if line.strip() == "atoms:":
+            in_atoms = True
+            continue
+        if in_atoms and line.startswith("- id:"):
+            errors.append(
+                f"atoms list item at column 0 (line {i + 1}): indent list under atoms, e.g. '  - id:' not '- id:'"
+            )
+            break
+
     # If atoms exist: vendor checkout and pinned commit are mandatory; no skipping
     if atoms and len(atoms) > 0:
         if not vendor_root.is_dir():

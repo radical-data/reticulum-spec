@@ -115,9 +115,7 @@ def fill_range_def_or_class(content: str, filepath: str, symbol: str) -> tuple[i
     return None
 
 
-def fill_line_range(
-    content: str, filepath: str, symbol: str, kind_hint: str
-) -> tuple[int, int] | None:
+def fill_line_range(content: str, filepath: str, symbol: str, kind_hint: str) -> tuple[int, int] | None:
     """
     Deterministic windowing. Returns (start, end) 1-indexed inclusive or None.
     For .py: AST-first (FunctionDef/ClassDef by name), then assignment regex (^SYMBOL\\s*=),
@@ -148,9 +146,7 @@ def fill_line_range(
     return fill_range_constant(content, occurrences[0][0], 2)
 
 
-def verify_ref(
-    vendor_root: Path, ref: dict, expected_commit: str
-) -> tuple[bool, str]:
+def verify_ref(vendor_root: Path, ref: dict, expected_commit: str) -> tuple[bool, str]:
     """
     Verify one reference: file exists, symbol in range. Schema vNext: no repo_revision/excerpt_hash on ref.
     Returns (ok, error_message).
@@ -188,6 +184,7 @@ def load_ssot(path: Path, for_write: bool = False):
     if for_write:
         try:
             from ruamel.yaml import YAML
+
             yaml = YAML()
             yaml.preserve_quotes = True
             with open(path, encoding="utf-8") as f:
@@ -197,6 +194,7 @@ def load_ssot(path: Path, for_write: bool = False):
             sys.exit(1)
     try:
         import yaml
+
         with open(path, encoding="utf-8") as f:
             return yaml.safe_load(f), None
     except ImportError:
