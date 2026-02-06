@@ -8,10 +8,7 @@ Outputs under spec/generated/ (plan section 10):
 - contexts.md (from atoms tagged context, sorted by numeric value)
 - layouts.md (byte/bit diagrams)
 - traceability.md (every atom ID exactly once)
-- manifest.json (required: ssot_version, ssot_content_sha256, source_commit; optional generated_at from source_of_truth.date, generated_files, excerpts_sha256)
-
-Hard rule: No timestamps in generated Markdown. generated_at is omitted or set from spec_meta.source_of_truth.date (deterministic); never wall-clock time.
-Same SSOT → byte-identical Markdown (reproducible).
+- manifest.json (required: ssot_version, ssot_content_sha256, source_commit; optional generated_files, excerpts_sha256)
 """
 
 import hashlib
@@ -156,11 +153,6 @@ def main() -> int:
         except Exception:
             pass
 
-    # Deterministic manifest: use pinned source date from SSOT if present; do not emit wall-clock time
-    source_of_truth = spec_meta.get("source_of_truth") or {}
-    source_date = (source_of_truth.get("date") or "").strip()
-    generated_at = source_date if source_date else None
-
     # 1. reticulum-wire-format.md — full spec by atom order (with inline excerpts) + excerpts_sha256 for manifest
     excerpts_sha256 = {}
     lines = [f"# {spec_id.replace('-', ' ').title()} (generated from SSOT)", ""]
@@ -301,8 +293,6 @@ def main() -> int:
         "source_commit": source_commit,
         "generated_files": generated_files,
     }
-    if generated_at:
-        manifest["generated_at"] = generated_at
     if excerpts_sha256:
         manifest["excerpts_sha256"] = excerpts_sha256
     (out_dir / "manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
